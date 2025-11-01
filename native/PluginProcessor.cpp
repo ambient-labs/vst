@@ -340,6 +340,93 @@ void EffectsPluginProcessor::initJavaScriptEngine()
     jsContext.evaluate(expr);
 }
 
+void EffectsPluginProcessor::evaluateDSPCode(const std::string& code)
+{
+    if (runtime == nullptr) {
+        return;
+    }
+
+    // Re-initialize the JS context to clear previous state
+    jsContext = choc::javascript::createQuickJSContext();
+
+    // Re-install native interop functions
+    jsContext.registerFunction("__postNativeMessage__", [this](choc::javascript::ArgumentList args) {
+        auto const batch = elem::js::parseJSON(args[0]->toString());
+        auto const rc = runtime->applyInstructions(batch);
+
+        if (rc != elem::ReturnCode::Ok()) {
+            dispatchError("Runtime Error", elem::ReturnCode::describe(rc));
+        }
+
+        return choc::value::Value();
+    });
+
+    jsContext.registerFunction("__log__", [this](choc::javascript::ArgumentList args) {
+        const auto* kDispatchScript = R"script(
+(function() {
+  console.log(...JSON.parse(%));
+  return true;
+})();
+)script";
+
+        if (auto* editor = static_cast<WebViewEditor*>(getActiveEditor())) {
+            auto v = choc::value::createEmptyArray();
+
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                v.addArrayElement(*args[i]);
+            }
+
+            auto expr = juce::String(kDispatchScript).replace("%", elem::js::serialize(choc::json::toString(v))).toStdString();
+            editor->getWebViewPtr()->evaluateJavascript(expr);
+        } else {
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                DBG(choc::json::toString(*args[i]));
+            }
+        }
+
+        return choc::value::Value();
+    });
+
+    // Re-install console shim
+    jsContext.evaluate(R"shim(
+(function() {
+  if (typeof globalThis.console === 'undefined') {
+    globalThis.console = {
+      log(...args) {
+        __log__('[embedded:log]', ...args);
+      },
+      warn(...args) {
+          __log__('[embedded:warn]', ...args);
+      },
+      error(...args) {
+          __log__('[embedded:error]', ...args);
+      }
+    };
+  }
+})();
+    )shim");
+
+    // Evaluate the new DSP code
+    jsContext.evaluate(code);
+
+    // Re-hydrate from current runtime state
+    const auto* kHydrateScript = R"script(
+(function() {
+  if (typeof globalThis.__receiveHydrationData__ !== 'function')
+    return false;
+
+  globalThis.__receiveHydrationData__(%);
+  return true;
+})();
+)script";
+
+    auto expr = juce::String(kHydrateScript).replace("%", elem::js::serialize(elem::js::serialize(runtime->snapshot()))).toStdString();
+    jsContext.evaluate(expr);
+
+    // Dispatch state change to trigger render with new code
+    dispatchStateChange();
+}
+
 void EffectsPluginProcessor::dispatchStateChange()
 {
     const auto* kDispatchScript = R"script(

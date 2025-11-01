@@ -1,7 +1,6 @@
-import {Renderer, el} from '@elemaudio/core';
-import {RefMap} from './RefMap';
+import { Renderer, el } from '@elemaudio/core';
+import { RefMap } from './RefMap';
 import srvb from './srvb';
-
 
 // This project demonstrates writing a small FDN reverb effect in Elementary.
 //
@@ -9,6 +8,7 @@ import srvb from './srvb';
 // batches through the __postNativeMessage__ function to direct the underlying native
 // engine.
 let core = new Renderer((batch) => {
+  console.log('Renderer: sending batch, length:', batch.length);
   __postNativeMessage__(JSON.stringify(batch));
 });
 
@@ -31,24 +31,23 @@ function shouldRender(prevState, nextState) {
 // on the result of our `shouldRender` check.
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
+  console.log('State change received, sampleRate:', state.sampleRate);
 
   if (shouldRender(prevState, state)) {
     let stats = core.render(...srvb({
       key: 'srvb',
       sampleRate: state.sampleRate,
-      size: refs.getOrCreate('size', 'const', {value: state.size}, []),
-      decay: refs.getOrCreate('decay', 'const', {value: state.decay}, []),
-      mod: refs.getOrCreate('mod', 'const', {value: state.mod}, []),
-      mix: refs.getOrCreate('mix', 'const', {value: state.mix}, []),
-    }, el.in({channel: 0}), el.in({channel: 1})));
-
-    console.log(stats);
+      size: refs.getOrCreate('size', 'const', { value: state.size }, []),
+      decay: refs.getOrCreate('decay', 'const', { value: state.decay }, []),
+      mod: refs.getOrCreate('mod', 'const', { value: state.mod }, []),
+      mix: refs.getOrCreate('mix', 'const', { value: state.mix }, []),
+    }, el.in({ channel: 0 }), el.in({ channel: 1 })));
+    console.log('Render stats:', stats);
   } else {
-    console.log('Updating refs');
-    refs.update('size', {value: state.size});
-    refs.update('decay', {value: state.decay});
-    refs.update('mod', {value: state.mod});
-    refs.update('mix', {value: state.mix});
+    refs.update('size', { value: state.size });
+    refs.update('decay', { value: state.decay });
+    refs.update('mod', { value: state.mod });
+    refs.update('mix', { value: state.mix });
   }
 
   prevState = state;
@@ -63,6 +62,7 @@ globalThis.__receiveStateChange__ = (serializedState) => {
 // the underlying engine.
 globalThis.__receiveHydrationData__ = (data) => {
   const payload = JSON.parse(data);
+  console.log('Hydrating', Object.keys(payload).length, 'nodes');
   const nodeMap = core._delegate.nodeMap;
 
   for (let [k, v] of Object.entries(payload)) {
@@ -76,6 +76,7 @@ globalThis.__receiveHydrationData__ = (data) => {
       },
     });
   }
+  console.log('Hydrated nodeMap size:', nodeMap.size);
 };
 
 // Finally, an error callback which just logs back to native

@@ -91,6 +91,15 @@ WebViewEditor::WebViewEditor(juce::AudioProcessor* proc, juce::File const& asset
             if (eventName == "setParameterValue" && args.size() > 1) {
                 return handleSetParameterValueEvent(args[1]);
             }
+
+            if (eventName == "updateDSPCode" && args.size() > 1) {
+                if (auto* ptr = dynamic_cast<EffectsPluginProcessor*>(getAudioProcessor())) {
+                    auto codeView = args[1].getString();
+                    std::string code(codeView);
+                    ptr->evaluateDSPCode(code);
+                }
+                return {};
+            }
         }
 
         return {};

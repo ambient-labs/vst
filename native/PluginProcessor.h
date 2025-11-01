@@ -62,6 +62,9 @@ public:
     /** Internal helper for initializing the embedded JS engine. */
     void initJavaScriptEngine();
 
+    /** Internal helper for evaluating new DSP code dynamically. */
+    void evaluateDSPCode(const std::string& code);
+
     /** Internal helper for propagating processor state changes. */
     void dispatchStateChange();
     void dispatchError(std::string const& name, std::string const& message);
