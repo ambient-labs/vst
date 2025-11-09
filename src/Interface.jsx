@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
-import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import React from 'react';
 
 import Knob from './Knob.jsx';
 
 import manifest from '../public/manifest.json';
-
-
 
 // The interface of our plugin, exported here as a React.js function
 // component.
