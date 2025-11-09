@@ -1,19 +1,6 @@
 import invariant from 'invariant';
 import { el } from '@elemaudio/core';
 
-// Our main stereo reverb.
-//
-// Upmixes the stereo input into an 8-channel diffusion network and
-// feedback delay network. Must supply a `key` prop to uniquely identify the
-// feedback taps in here.
-//
-// @param {object} props
-// @param {number} props.size in [0, 1]
-// @param {number} props.decay in [0, 1]
-// @param {number} props.mod in [0, 1]
-// @param {number} props.mix in [0, 1]
-// @param {core.Node} xl input
-// @param {core.Node} xr input
 export default function srvb(props, xl, xr) {
   invariant(typeof props === 'object', 'Unexpected props object');
 
