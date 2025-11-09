@@ -6,7 +6,7 @@
   "parameters": [
     {
       "paramId": "decay",
-      "name": "Decay",
+      "name": "Volume",
       "min": 0.0,
       "max": 1.0,
       "defaultValue": 0.5
