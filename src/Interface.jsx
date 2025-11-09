@@ -28,21 +28,14 @@ export default function Interface(props) {
     };
   });
 
-  return (
-    <div className="w-full h-screen min-w-[492px] min-h-[238px] bg-slate-800 bg-mesh p-8">
-      <div className="flex flex-col h-4/5">
-        <div className="flex flex-1">
-          {params.map(({name, value, readout, setValue}) => (
+  return params.map(({name, value, readout, setValue}) => (
             <div key={name} className="flex flex-col flex-1 justify-center items-center">
               <Knob className="h-20 w-20 m-4" value={value} onChange={setValue} {...colorProps} />
               <div className="flex-initial mt-2">
-                <div className="text-sm text-slate-50 text-center font-light">{name}</div>
+                <div className="text-sm text-pink-500 text-center font-light">{name}</div>
                 <div className="text-sm text-pink-500 text-center font-light">{readout}</div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+          ));
+  
 }
