@@ -37,17 +37,11 @@ globalThis.__receiveStateChange__ = (serializedState) => {
     let stats = core.render(...srvb({
       key: 'srvb',
       sampleRate: state.sampleRate,
-      size: refs.getOrCreate('size', 'const', { value: state.size }, []),
       decay: refs.getOrCreate('decay', 'const', { value: state.decay }, []),
-      mod: refs.getOrCreate('mod', 'const', { value: state.mod }, []),
-      mix: refs.getOrCreate('mix', 'const', { value: state.mix }, []),
     }, el.in({ channel: 0 }), el.in({ channel: 1 })));
     console.log('Render stats:', stats);
   } else {
-    refs.update('size', { value: state.size });
     refs.update('decay', { value: state.decay });
-    refs.update('mod', { value: state.mod });
-    refs.update('mix', { value: state.mix });
   }
 
   prevState = state;
