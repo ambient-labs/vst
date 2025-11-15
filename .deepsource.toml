@@ -1,1 +1,20 @@
 version = 1
+
+test_patterns = ["/src/**/*.ts", "dsp/**/*.ts", "/src/**/*.js", "dsp/**/*.js"]
+
+exclude_patterns = [
+  "src/**/*.test.ts", 
+  "dsp/**/*.test.ts", 
+]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  environment = [
+    "browser",
+    "nodejs",
+    "jest"
+  ]
+  dialect = "typescript"
