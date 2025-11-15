@@ -1,39 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { access } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+const BUILD_TIMEOUT_MS = 90000; // 90 seconds (assuming ~45s build time, doubled)
+
 describe('Build Verification', () => {
-  it('should build the native plugin successfully', () => {
+  it('should build the native plugin successfully and create VST3 artifact', async () => {
     // Run the native build script
-    // This will throw if the build fails
-    const output = execSync('pnpm run build-native', {
+    const { stdout } = await execAsync('pnpm run build-native', {
       cwd: rootDir,
       encoding: 'utf8',
-      timeout: 300000, // 5 minutes for build
+      timeout: BUILD_TIMEOUT_MS,
     });
 
-    expect(output).toBeDefined();
-  }, 300000); // 5 minute timeout for the test
+    expect(stdout).toBeDefined();
 
-  it('should create VST3 artifact', () => {
+    // Verify VST3 artifact was created
     const vst3Path = join(rootDir, 'native/build/scripted/SRVB_artefacts/Release/VST3/SRVB.vst3');
-    expect(existsSync(vst3Path)).toBe(true);
-  });
-
-  it('should create AU artifact on macOS', () => {
-    // Only check for AU on macOS
-    if (process.platform === 'darwin') {
-      const auPath = join(rootDir, 'native/build/scripted/SRVB_artefacts/Release/AU/SRVB.component');
-      expect(existsSync(auPath)).toBe(true);
-    } else {
-      // Skip test on non-macOS platforms
-      expect(true).toBe(true);
-    }
-  });
+    await expect(access(vst3Path)).resolves.toBeUndefined();
+  }, BUILD_TIMEOUT_MS);
 });

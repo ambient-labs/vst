@@ -15,7 +15,7 @@
     "build-ui": "vite build",
     "build": "npm run build-dsp && npm run build-ui && npm run build-native",
     "preview": "vite preview",
-    "test:integration": "vitest run --config vitest.config.js"
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@elemaudio/core": "^3.0.0",
