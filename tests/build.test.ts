@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
-const BUILD_TIMEOUT_MS = 90000; // 90 seconds (assuming ~45s build time, doubled)
+const BUILD_TIMEOUT_MS = 180000; // 180 seconds (3 minutes, Linux builds can be slower)
 
 describe('Build Verification', () => {
   it('should build the native plugin successfully and create VST3 artifact', async () => {
