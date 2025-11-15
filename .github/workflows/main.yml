@@ -52,6 +52,29 @@ jobs:
           npm install
           npm run build
 
+      - name: Verify Build Artifacts
+        shell: bash
+        run: |
+          set -e
+
+          # Verify VST3 was built
+          if [ ! -d "native/build/scripted/SRVB_artefacts/Release/VST3/SRVB.vst3" ]; then
+            echo "❌ Error: VST3 artifact not found!"
+            exit 1
+          fi
+          echo "✅ VST3 artifact verified"
+
+          # Verify AU was built (macOS only)
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            if [ ! -d "native/build/scripted/SRVB_artefacts/Release/AU/SRVB.component" ]; then
+              echo "❌ Error: AU artifact not found!"
+              exit 1
+            fi
+            echo "✅ AU artifact verified"
+          fi
+
+          echo "✅ All build artifacts verified successfully"
+
       - name: Artifact naming
         shell: bash
         run: |
