@@ -19,7 +19,7 @@ export class RefMap {
   update(name, props) {
     invariant(this._map.has(name), "Oops, trying to update a ref that doesn't exist");
 
-    let [node, setter] = this._map.get(name);
+    let [_node, setter] = this._map.get(name);
     setter(props);
   }
 }
