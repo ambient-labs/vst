@@ -79,7 +79,7 @@ jobs:
           echo "ARTIFACT_DATESTRING=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "ARTIFACT_OS=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: srvb-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_DATESTRING }}
           path: |
