@@ -12,7 +12,7 @@ option(ELEM_DEV_LOCALHOST "Run against localhost for static assets" OFF)
 add_subdirectory(juce)
 add_subdirectory(elementary/runtime)
 
-juce_add_plugin(${TARGET_NAME
+juce_add_plugin(${TARGET_NAME}
   BUNDLE_ID "audio.elementary.srvb"
   COMPANY_NAME "Elementary Audio"
   COMPANY_WEBSITE "https://www.elementary.audio"
