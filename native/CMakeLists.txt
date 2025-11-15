@@ -12,14 +12,7 @@ option(ELEM_DEV_LOCALHOST "Run against localhost for static assets" OFF)
 add_subdirectory(juce)
 add_subdirectory(elementary/runtime)
 
-# Find GTK and webkit2gtk for Linux builds
-if (UNIX AND NOT APPLE)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-  pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
-endif()
-
-juce_add_plugin(${TARGET_NAME}
+juce_add_plugin(${TARGET_NAME
   BUNDLE_ID "audio.elementary.srvb"
   COMPANY_NAME "Elementary Audio"
   COMPANY_WEBSITE "https://www.elementary.audio"
@@ -62,9 +55,7 @@ target_sources(${TARGET_NAME}
 target_include_directories(${TARGET_NAME}
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/choc/gui
-  ${CMAKE_CURRENT_SOURCE_DIR}/choc/javascript
-  $<$<PLATFORM_ID:Linux>:${GTK3_INCLUDE_DIRS}>
-  $<$<PLATFORM_ID:Linux>:${WEBKIT2GTK_INCLUDE_DIRS}>)
+  ${CMAKE_CURRENT_SOURCE_DIR}/choc/javascript)
 
 target_compile_features(${TARGET_NAME}
   PRIVATE
@@ -90,6 +81,4 @@ target_link_libraries(${TARGET_NAME}
   juce::juce_graphics
   juce::juce_gui_basics
   juce::juce_gui_extra
-  runtime
-  $<$<PLATFORM_ID:Linux>:${GTK3_LIBRARIES}>
-  $<$<PLATFORM_ID:Linux>:${WEBKIT2GTK_LIBRARIES}>)
+  runtime)
