@@ -26,3 +26,5 @@ public/dsp.main.js
 *.swp
 .env
 log.txt
+
+.devcontainer
