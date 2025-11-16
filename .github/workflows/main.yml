@@ -3,9 +3,37 @@ name: Build
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - 'native/**'
+      - 'dsp/**'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/build-native.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
+      - 'index.html'
+      - '.gitmodules'
+      - '.github/workflows/main.yml'
   push:
     branches:
       - '**'
+    paths:
+      - 'native/**'
+      - 'dsp/**'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/build-native.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'tailwind.config.js'
+      - 'postcss.config.js'
+      - 'index.html'
+      - '.gitmodules'
+      - '.github/workflows/main.yml'
 
 jobs:
   native:
