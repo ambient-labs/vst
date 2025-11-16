@@ -1,10 +1,20 @@
 version = 1
 
-test_patterns = ["/src/**/*.ts", "dsp/**/*.ts", "/src/**/*.js", "dsp/**/*.js"]
+test_patterns = [
+  "tests/**"
+]
 
 exclude_patterns = [
-  "src/**/*.test.ts", 
-  "dsp/**/*.test.ts", 
+  "node_modules/**",
+  "dist/**",
+  "public/**",
+  "native/build/**",
+  "native/juce/**",
+  "native/elementary/**",
+  "native/choc/**",
+  ".devcontainer/**",
+  "pnpm-lock.yaml",
+  "package-lock.json"
 ]
 
 [[analyzers]]
@@ -12,9 +22,15 @@ name = "javascript"
 enabled = true
 
   [analyzers.meta]
+  plugins = ["react"]
   environment = [
     "browser",
     "nodejs",
     "jest"
   ]
+  module_system = "es-modules"
   dialect = "typescript"
+
+[[analyzers]]
+name = "cxx"
+enabled = true
