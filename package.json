@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "clean": "rimraf dist",
-    "predev": "npm run clean",
-    "prebuild": "npm run clean",
-    "dev": "npm run dev-native && concurrently \"npm run dev-dsp\" \"vite\"",
+    "predev": "pnpm run clean",
+    "prebuild": "pnpm run clean",
+    "dev": "pnpm run dev-native && concurrently \"pnpm run dev-dsp\" \"vite\"",
     "dev-native": "zx scripts/build-native.mjs --dev",
     "dev-dsp": "esbuild dsp/main.js --watch --bundle --outfile=public/dsp.main.js",
     "build-native": "zx scripts/build-native.mjs",
     "build-dsp": "esbuild dsp/main.js --bundle --outfile=public/dsp.main.js",
     "build-ui": "vite build",
-    "build": "npm run build-dsp && npm run build-ui && npm run build-native",
+    "build": "pnpm run build-dsp && pnpm run build-ui && pnpm run build-native",
     "preview": "vite preview",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint .",
@@ -22,7 +22,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
-    "@elemaudio/core": "^3.0.0",
+    "@elemaudio/core": "^4.0.1",
     "@heroicons/react": "^2.0.18",
     "@use-gesture/react": "^10.2.27",
     "cpy-cli": "^4.2.0",
@@ -35,6 +35,7 @@
     "zustand": "^4.3.8"
   },
   "devDependencies": {
+    "@elemaudio/offline-renderer": "^4.0.3",
     "@types/node": "^24.10.1",
     "@types/react": "^18.0.37",
     "@types/react-dom": "^18.0.11",

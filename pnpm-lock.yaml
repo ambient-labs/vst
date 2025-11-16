@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@elemaudio/core':
-        specifier: ^3.0.0
-        version: 3.2.1
+        specifier: ^4.0.1
+        version: 4.0.1
       '@heroicons/react':
         specifier: ^2.0.18
         version: 2.2.0(react@18.3.1)
@@ -42,6 +42,9 @@ importers:
         specifier: ^4.3.8
         version: 4.5.7(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
+      '@elemaudio/offline-renderer':
+        specifier: ^4.0.3
+        version: 4.0.3
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.1
@@ -190,8 +193,12 @@ packages:
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
 
-  '@elemaudio/core@3.2.1':
-    resolution: {integrity: sha512-Id122jLwlJdc9v30RO/sMIxdhyVLXbav9rP5ReUqgWZtlxHcuzT+8/ZSErBNzIfDtwX9P2vwl4ZKBpGnde4y0w==}
+  '@elemaudio/core@4.0.1':
+    resolution: {integrity: sha512-O58CaR5ttxzPt1LwkJoXVipPLlZ8lZmOIHhJFiih3rWkfCZ3/H1X2XTG0HM2jAn3BokoP5jYSbnbEiQybyvRGw==}
+
+  '@elemaudio/offline-renderer@4.0.3':
+    resolution: {integrity: sha512-yuyBOKsglMQYxcKEdYx13w8VFIKHnxvhaoQd5Nu1t6qM30VCAMr3reiN/frr9XiY8XRgjRH1b2rrC/SPB74jXg==}
+    engines: {node: '>=18'}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -2424,11 +2431,16 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@elemaudio/core@3.2.1':
+  '@elemaudio/core@4.0.1':
     dependencies:
       eventemitter3: 5.0.1
       invariant: 2.2.4
       shallowequal: 1.1.0
+
+  '@elemaudio/offline-renderer@4.0.3':
+    dependencies:
+      '@elemaudio/core': 4.0.1
+      invariant: 2.2.4
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
