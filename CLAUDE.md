@@ -80,6 +80,8 @@ pnpm run build
 # Repeat until all checks pass
 ```
 
+**Note:** Always use `pnpm` for package management, never `npm`.
+
 **Do not push until:**
 - ✅ All linter errors are resolved
 - ✅ All tests pass
@@ -207,9 +209,10 @@ gh pr view            # View current PR
 - Clean up worktrees when done
 
 ### Dependencies
-- Use `pnpm` for package management
+- **Always use `pnpm` for package management (never use `npm`)**
 - Lock files should be committed
 - Native code depends on JUCE submodules
+- When adding packages: `pnpm add <package>` or `pnpm add -D <package>` for dev dependencies
 
 ### CI/CD
 - Tests run on macOS (required for native builds)
