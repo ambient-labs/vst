@@ -1,1 +1,32 @@
 version = 1
+
+test_patterns = [
+  "tests/**"
+]
+
+exclude_patterns = [
+  "node_modules/**",
+  "dist/**",
+  "public/**",
+  "native/build/**",
+  "native/juce/**",
+  "native/elementary/**",
+  "native/choc/**",
+  ".devcontainer/**",
+  "pnpm-lock.yaml",
+  "package-lock.json"
+]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+[analyzers.meta]
+plugins = ["react"]
+environment = ["nodejs", "browser", "jest"]
+module_system = "es-modules"
+dialect = "typescript"
+
+[[analyzers]]
+name = "cxx"
+enabled = true
