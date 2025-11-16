@@ -10,16 +10,65 @@
     "dev": "pnpm run dev-native && concurrently \"pnpm run dev-dsp\" \"vite\"",
     "dev-native": "zx scripts/build-native.mjs --dev",
     "dev-dsp": "esbuild dsp/main.js --watch --bundle --outfile=public/dsp.main.js",
-    "build-native": "zx scripts/build-native.mjs",
-    "build-dsp": "esbuild dsp/main.js --bundle --outfile=public/dsp.main.js",
-    "build-ui": "vite build",
-    "build": "pnpm run build-dsp && pnpm run build-ui && pnpm run build-native",
+    "build-native": "wireit",
+    "build-dsp": "wireit",
+    "build-ui": "wireit",
+    "build": "wireit",
     "preview": "vite preview",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "wireit": {
+    "build": {
+      "dependencies": [
+        "build-dsp",
+        "build-ui",
+        "build-native"
+      ]
+    },
+    "build-dsp": {
+      "command": "esbuild dsp/main.js --bundle --outfile=public/dsp.main.js",
+      "files": [
+        "dsp/**/*.js"
+      ],
+      "output": [
+        "public/dsp.main.js"
+      ]
+    },
+    "build-ui": {
+      "command": "vite build",
+      "dependencies": [
+        "build-dsp"
+      ],
+      "files": [
+        "src/**/*.{ts,tsx,jsx,css}",
+        "index.html",
+        "vite.config.js",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "public/**/*"
+      ],
+      "output": [
+        "dist/**"
+      ]
+    },
+    "build-native": {
+      "command": "zx scripts/build-native.mjs",
+      "dependencies": [
+        "build-ui"
+      ],
+      "files": [
+        "native/**/*.{cpp,h}",
+        "native/CMakeLists.txt",
+        "scripts/build-native.mjs"
+      ],
+      "output": [
+        "native/build/scripted/SRVB_artefacts/**"
+      ]
+    }
   },
   "dependencies": {
     "@elemaudio/core": "^4.0.1",
@@ -53,6 +102,7 @@
     "typescript": "^5.9.3",
     "vite": "^4.3.9",
     "vitest": "^4.0.9",
+    "wireit": "^0.14.12",
     "zx": "^7.2.3"
   }
 }
