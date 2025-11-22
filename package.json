@@ -23,6 +23,7 @@
   },
   "wireit": {
     "build": {
+      "command": "node -e \"process.exit(0)\"",
       "dependencies": [
         "build-dsp",
         "build-ui",
@@ -32,7 +33,7 @@
     "build-dsp": {
       "command": "esbuild dsp/main.js --bundle --outfile=public/dsp.main.js",
       "files": [
-        "dsp/**/*.js"
+        "dsp/**/*.{js,ts}"
       ],
       "output": [
         "public/dsp.main.js"
