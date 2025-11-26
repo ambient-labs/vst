@@ -20,10 +20,12 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "deepsource:install": "curl https://deepsource.io/cli | sh",
+    "deepsource": "export $(cat .env | xargs) && ./bin/deepsource report --analyzer javascript",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "pre-commit": "pnpm lint-staged && pnpm deepsource"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

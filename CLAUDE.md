@@ -213,6 +213,26 @@ After creating the PR:
 - Maintain consistent code style
 - Run `pnpm run lint` before pushing
 
+### DeepSource (Static Analysis)
+
+DeepSource runs automated code analysis on PRs and as a pre-commit hook.
+
+**Setup (one-time):**
+
+```bash
+pnpm run deepsource:install
+```
+
+**Run manually:**
+
+```bash
+pnpm run deepsource
+```
+
+**Pre-commit hook:**
+
+DeepSource analysis runs automatically on every commit via the pre-commit hook. Ensure `DEEPSOURCE_DSN` is set in your `.env` file.
+
 ### Documentation
 
 **Documentation Must Be Inline with Code Changes:**
