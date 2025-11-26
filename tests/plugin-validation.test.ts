@@ -154,13 +154,44 @@ async function downloadPluginval(): Promise<string> {
     // Verify extraction succeeded
     if (!existsSync(pluginvalExe)) {
       // List directory contents for debugging
-      console.error('Extraction failed. Directory contents:');
-      const files = readdirSync(PLUGINVAL_DIR);
-      console.error(files);
-      throw new Error(
-        `Pluginval binary not found at ${pluginvalExe} after extraction. ` +
-        `Found files: ${files.join(', ')}`
-      );
+      console.log('Binary not at expected location. Searching in extracted files...');
+      const files = readdirSync(PLUGINVAL_DIR, { withFileTypes: true });
+      console.log('Directory contents:', files.map(f => f.name).join(', '));
+
+      // Try to find the binary in subdirectories
+      let foundPath: string | null = null;
+      for (const file of files) {
+        if (file.isDirectory()) {
+          const subFiles = readdirSync(join(PLUGINVAL_DIR, file.name));
+          console.log(`Contents of ${file.name}:`, subFiles.join(', '));
+
+          const binaryName = config.pluginvalExe;
+          if (subFiles.includes(binaryName)) {
+            foundPath = join(PLUGINVAL_DIR, file.name, binaryName);
+            console.log(`Found binary at: ${foundPath}`);
+            break;
+          }
+        } else if (file.name === config.pluginvalExe) {
+          foundPath = join(PLUGINVAL_DIR, file.name);
+          console.log(`Found binary at root: ${foundPath}`);
+          break;
+        }
+      }
+
+      if (!foundPath || !existsSync(foundPath)) {
+        throw new Error(
+          `Pluginval binary '${config.pluginvalExe}' not found after extraction. ` +
+          `Expected at: ${pluginvalExe}. ` +
+          `Searched in: ${PLUGINVAL_DIR} and subdirectories.`
+        );
+      }
+
+      // Make executable and return the found path
+      if (process.platform === 'darwin' || process.platform === 'linux') {
+        chmodSync(foundPath, 0o755);
+      }
+      console.log('pluginval ready');
+      return foundPath;
     }
 
     // Make executable on Unix systems
