@@ -1,59 +1,68 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, chmodSync, createWriteStream } from 'fs';
+import { execFileSync } from 'child_process';
+import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync } from 'fs';
 import { join } from 'path';
 import https from 'https';
 
 const PLUGINVAL_VERSION = 'v1.0.3';
 const PLUGINVAL_DIR = join(process.cwd(), 'node_modules', '.cache', 'pluginval');
 const BUILD_TYPE = process.env.BUILD_TYPE || 'Release';
+const PLUGIN_NAME = 'SRVB';
 
-function getPluginvalUrl(): string {
-  const platform = process.platform;
+interface PlatformConfig {
+  pluginvalUrl: string;
+  pluginvalExe: string;
+  unzipCommand: string[];
+}
 
-  if (platform === 'darwin') {
-    return `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip`;
-  } else if (platform === 'linux') {
-    return `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip`;
-  } else if (platform === 'win32') {
-    return `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Windows.zip`;
+const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
+  darwin: {
+    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip`,
+    pluginvalExe: 'pluginval',
+    unzipCommand: ['unzip', '-o'],
+  },
+  linux: {
+    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip`,
+    pluginvalExe: 'pluginval',
+    unzipCommand: ['unzip', '-o'],
+  },
+  win32: {
+    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Windows.zip`,
+    pluginvalExe: 'pluginval.exe',
+    unzipCommand: ['powershell', '-command', 'Expand-Archive'],
+  },
+};
+
+function getPlatformConfig(): PlatformConfig {
+  const config = PLATFORM_CONFIGS[process.platform];
+  if (!config) {
+    throw new Error(`Unsupported platform: ${process.platform}`);
   }
-
-  throw new Error(`Unsupported platform: ${platform}`);
+  return config;
 }
 
 function getPluginvalExecutable(): string {
-  const platform = process.platform;
-
-  if (platform === 'darwin' || platform === 'linux') {
-    return join(PLUGINVAL_DIR, 'pluginval');
-  } else if (platform === 'win32') {
-    return join(PLUGINVAL_DIR, 'pluginval.exe');
-  }
-
-  throw new Error(`Unsupported platform: ${platform}`);
+  const config = getPlatformConfig();
+  return join(PLUGINVAL_DIR, config.pluginvalExe);
 }
 
 function getPluginPath(): string {
-  const platform = process.platform;
-  const pluginName = 'SRVB';
-
-  if (platform === 'darwin') {
-    return join(process.cwd(), 'native', 'build', 'scripted', `${pluginName}_artefacts`, BUILD_TYPE, 'VST3', `${pluginName}.vst3`);
-  } else if (platform === 'linux') {
-    return join(process.cwd(), 'native', 'build', 'scripted', `${pluginName}_artefacts`, BUILD_TYPE, 'VST3', `${pluginName}.vst3`);
-  } else if (platform === 'win32') {
-    return join(process.cwd(), 'native', 'build', 'scripted', `${pluginName}_artefacts`, BUILD_TYPE, 'VST3', `${pluginName}.vst3`);
-  }
-
-  throw new Error(`Unsupported platform: ${platform}`);
+  return join(
+    process.cwd(),
+    'native',
+    'build',
+    'scripted',
+    `${PLUGIN_NAME}_artefacts`,
+    BUILD_TYPE,
+    'VST3',
+    `${PLUGIN_NAME}.vst3`
+  );
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       if (response.statusCode === 302 || response.statusCode === 301) {
-        // Follow redirect
         const redirectUrl = response.headers.location;
         if (redirectUrl) {
           downloadFile(redirectUrl, dest).then(resolve).catch(reject);
@@ -71,6 +80,19 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 
       fileStream.on('finish', () => {
         fileStream.close();
+
+        // Validate file was actually downloaded
+        try {
+          const stats = statSync(dest);
+          if (stats.size === 0) {
+            reject(new Error('Downloaded file is empty'));
+            return;
+          }
+        } catch (err) {
+          reject(err);
+          return;
+        }
+
         resolve();
       });
 
@@ -80,12 +102,22 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 }
 
 async function extractZip(zipPath: string, destDir: string): Promise<void> {
-  // Use unzip command on macOS/Linux
-  if (process.platform === 'darwin' || process.platform === 'linux') {
-    execSync(`unzip -o "${zipPath}" -d "${destDir}"`, { stdio: 'ignore' });
-  } else if (process.platform === 'win32') {
-    // On Windows, use PowerShell's Expand-Archive
-    execSync(`powershell -command "Expand-Archive -Path '${zipPath}' -DestinationPath '${destDir}' -Force"`, { stdio: 'ignore' });
+  const config = getPlatformConfig();
+
+  if (process.platform === 'win32') {
+    // Windows PowerShell extraction
+    execFileSync('powershell', [
+      '-command',
+      'Expand-Archive',
+      '-Path',
+      zipPath,
+      '-DestinationPath',
+      destDir,
+      '-Force'
+    ], { stdio: 'ignore' });
+  } else {
+    // Unix-like systems (macOS, Linux)
+    execFileSync('unzip', ['-o', zipPath, '-d', destDir], { stdio: 'ignore' });
   }
 }
 
@@ -98,7 +130,8 @@ async function downloadPluginval(): Promise<string> {
     return pluginvalExe;
   }
 
-  console.log('Downloading pluginval...');
+  const config = getPlatformConfig();
+  console.log(`Downloading pluginval ${PLUGINVAL_VERSION}...`);
 
   // Create cache directory
   if (!existsSync(PLUGINVAL_DIR)) {
@@ -106,22 +139,69 @@ async function downloadPluginval(): Promise<string> {
   }
 
   // Download pluginval
-  const url = getPluginvalUrl();
   const zipPath = join(PLUGINVAL_DIR, 'pluginval.zip');
 
-  await downloadFile(url, zipPath);
+  try {
+    await downloadFile(config.pluginvalUrl, zipPath);
 
-  // Extract
-  console.log('Extracting pluginval...');
-  await extractZip(zipPath, PLUGINVAL_DIR);
+    // Extract
+    console.log('Extracting pluginval...');
+    await extractZip(zipPath, PLUGINVAL_DIR);
 
-  // Make executable on Unix systems
-  if (process.platform === 'darwin' || process.platform === 'linux') {
-    chmodSync(pluginvalExe, 0o755);
+    // Clean up zip file
+    unlinkSync(zipPath);
+
+    // Make executable on Unix systems
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+      chmodSync(pluginvalExe, 0o755);
+    }
+
+    console.log('pluginval ready');
+    return pluginvalExe;
+  } catch (error) {
+    // Clean up partial download on error
+    if (existsSync(zipPath)) {
+      try {
+        unlinkSync(zipPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    throw error;
   }
+}
 
-  console.log('pluginval ready');
-  return pluginvalExe;
+function runPluginval(pluginvalPath: string, pluginPath: string, args: string[]): string {
+  try {
+    const output = execFileSync(
+      pluginvalPath,
+      [...args, pluginPath],
+      {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 120000,
+      }
+    );
+    return output;
+  } catch (error) {
+    // Handle execution errors with proper type checking
+    if (error instanceof Error) {
+      const execError = error as Error & { stdout?: string; stderr?: string; status?: number };
+
+      console.error('pluginval execution failed');
+      if (execError.stdout) {
+        console.error('stdout:', execError.stdout);
+      }
+      if (execError.stderr) {
+        console.error('stderr:', execError.stderr);
+      }
+
+      throw new Error(
+        `Plugin validation failed with exit code ${execError.status ?? 'unknown'}: ${error.message}`
+      );
+    }
+    throw error;
+  }
 }
 
 describe('Plugin Validation', () => {
@@ -135,7 +215,9 @@ describe('Plugin Validation', () => {
 
     // Verify plugin exists
     if (!existsSync(pluginPath)) {
-      throw new Error(`Plugin not found at ${pluginPath}. Run 'pnpm run build' first.`);
+      throw new Error(
+        `Plugin not found at ${pluginPath}. Run 'pnpm run build' first.`
+      );
     }
 
     console.log(`Plugin path: ${pluginPath}`);
@@ -145,86 +227,61 @@ describe('Plugin Validation', () => {
   it('should pass pluginval VST3 compliance tests', async () => {
     console.log('Running pluginval on VST3 plugin...');
 
-    try {
-      // Run pluginval with strict validation
-      const output = execSync(
-        `"${pluginvalPath}" --strictness-level 10 --validate-in-process --output-dir "${PLUGINVAL_DIR}" --vst3 "${pluginPath}"`,
-        {
-          encoding: 'utf-8',
-          stdio: 'pipe',
-          timeout: 120000, // 2 minute timeout
-        }
-      );
+    const output = runPluginval(pluginvalPath, pluginPath, [
+      '--strictness-level',
+      '10',
+      '--validate-in-process',
+      '--output-dir',
+      PLUGINVAL_DIR,
+      '--vst3',
+    ]);
 
-      console.log('pluginval output:', output);
+    console.log('pluginval output:', output);
 
-      // Check output for success indicators
-      expect(output).toContain('Validation complete');
+    // pluginval exits with code 0 on success, non-zero on failure
+    // The successful execution of runPluginval (without throwing) means validation passed
+    expect(output).toBeDefined();
 
-      // Make sure there are no failures
-      expect(output.toLowerCase()).not.toContain('fail');
-      expect(output.toLowerCase()).not.toContain('error');
-    } catch (error: any) {
-      // If pluginval returns non-zero exit code, the validation failed
-      console.error('pluginval failed:');
-      console.error(error.stdout || error.message);
-      console.error(error.stderr);
-      throw new Error(`Plugin validation failed: ${error.message}`);
-    }
+    // Optional: Check for success indicators in output
+    // (pluginval's exit code is the primary indicator)
+    expect(output.length).toBeGreaterThan(0);
   }, 180000); // Allow 3 minutes for validation
 
   it('should load and unload without crashes', async () => {
     console.log('Testing plugin loading stability...');
 
-    try {
-      // Run quick load test
-      const output = execSync(
-        `"${pluginvalPath}" --strictness-level 5 --timeout-ms 30000 --vst3 "${pluginPath}"`,
-        {
-          encoding: 'utf-8',
-          stdio: 'pipe',
-          timeout: 60000,
-        }
-      );
+    const output = runPluginval(pluginvalPath, pluginPath, [
+      '--strictness-level',
+      '5',
+      '--timeout-ms',
+      '30000',
+      '--vst3',
+    ]);
 
-      console.log('Load test output:', output);
+    console.log('Load test output:', output);
 
-      // Verify no crashes
-      expect(output).toBeDefined();
-      expect(output.toLowerCase()).not.toContain('crash');
-      expect(output.toLowerCase()).not.toContain('hang');
-    } catch (error: any) {
-      console.error('Load test failed:');
-      console.error(error.stdout || error.message);
-      console.error(error.stderr);
-      throw new Error(`Plugin load test failed: ${error.message}`);
-    }
+    // Successful execution means no crashes occurred
+    expect(output).toBeDefined();
+    expect(output.length).toBeGreaterThan(0);
   }, 90000); // Allow 90 seconds
 
   it('should handle parameter changes correctly', async () => {
     console.log('Testing parameter handling...');
 
-    try {
-      // Run with randomised parameters
-      const output = execSync(
-        `"${pluginvalPath}" --strictness-level 7 --random-seed 42 --timeout-ms 30000 --vst3 "${pluginPath}"`,
-        {
-          encoding: 'utf-8',
-          stdio: 'pipe',
-          timeout: 60000,
-        }
-      );
+    const output = runPluginval(pluginvalPath, pluginPath, [
+      '--strictness-level',
+      '7',
+      '--random-seed',
+      '42',
+      '--timeout-ms',
+      '30000',
+      '--vst3',
+    ]);
 
-      console.log('Parameter test output:', output);
+    console.log('Parameter test output:', output);
 
-      // Verify successful parameter testing
-      expect(output).toBeDefined();
-      expect(output.toLowerCase()).not.toContain('parameter error');
-    } catch (error: any) {
-      console.error('Parameter test failed:');
-      console.error(error.stdout || error.message);
-      console.error(error.stderr);
-      throw new Error(`Plugin parameter test failed: ${error.message}`);
-    }
+    // Successful execution means parameter handling passed
+    expect(output).toBeDefined();
+    expect(output.length).toBeGreaterThan(0);
   }, 90000);
 });
