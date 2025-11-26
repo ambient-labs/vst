@@ -1,6 +1,11 @@
 #include "PluginProcessor.h"
 #include "WebViewEditor.h"
 
+#if JUCE_LINUX
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#endif
+
 
 // A helper for reading numbers from a choc::Value, which seems to opportunistically parse
 // JSON numbers into ints or 32-bit floats whenever it wants.
@@ -59,8 +64,18 @@ WebViewEditor::WebViewEditor(juce::AudioProcessor* proc, juce::File const& asset
     viewContainer.setView(webView->getViewHandle());
 #elif JUCE_WINDOWS
     viewContainer.setHWND(webView->getViewHandle());
+#elif JUCE_LINUX
+    // On Linux, getViewHandle() returns a GtkWidget*
+    // We need to get the X11 window ID from it
+    auto* gtkWidget = static_cast<GtkWidget*>(webView->getViewHandle());
+    if (auto* gdkWindow = gtk_widget_get_window(gtkWidget)) {
+        auto x11WindowId = gdk_x11_window_get_xid(gdkWindow);
+        // Reconstruct viewContainer with the correct window ID using placement new
+        viewContainer.~XEmbedComponent();
+        new (&viewContainer) juce::XEmbedComponent(x11WindowId, true, false);
+    }
 #else
-#error "We only support MacOS and Windows here yet."
+#error "Unsupported platform"
 #endif
 
     addAndMakeVisible(viewContainer);

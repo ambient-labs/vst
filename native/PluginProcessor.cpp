@@ -16,8 +16,15 @@ juce::File getAssetsDirectory()
         .getParentDirectory()  // Plugin.vst3/Contents/<arch>/
         .getParentDirectory()  // Plugin.vst3/Contents/
         .getChildFile("Resources/dist");
+#elif JUCE_LINUX
+    // On Linux, VST3 plugins are typically in /usr/lib/vst3 or ~/.vst3
+    // The structure is: Plugin.vst3/Contents/<arch>/Plugin.so
+    auto assetsDir = juce::File::getSpecialLocation(juce::File::SpecialLocationType::currentExecutableFile)
+        .getParentDirectory()  // Plugin.vst3/Contents/<arch>/
+        .getParentDirectory()  // Plugin.vst3/Contents/
+        .getChildFile("Resources/dist");
 #else
-#error "We only support Mac and Windows here yet."
+#error "Unsupported platform"
 #endif
 
     return assetsDir;
