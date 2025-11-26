@@ -39,7 +39,7 @@ export default [
     },
   },
   {
-    files: ['dsp/**/*.js'],
+    files: ['dsp/**/*.js', 'packages/dsp/**/*.js'],
     languageOptions: {
       globals: {
         console: 'readonly',
@@ -67,8 +67,10 @@ export default [
     ignores: [
       'node_modules/',
       'dist/',
+      '**/dist/',
       'native/',
       'public/',
+      '**/public/',
       'pnpm-lock.yaml',
       '.devcontainer/',
       '.wireit/',
