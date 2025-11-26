@@ -83,10 +83,7 @@
       ]
     },
     "test:integration": {
-      "command": "vitest run --config vitest.integration.config.ts",
-      "dependencies": [
-        "setup-pluginval"
-      ]
+      "command": "vitest run --config vitest.integration.config.ts"
     }
   },
   "dependencies": {
