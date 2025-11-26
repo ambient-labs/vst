@@ -65,6 +65,11 @@ async function downloadFile(url: string, dest: string): Promise<void> {
       if (response.statusCode === 302 || response.statusCode === 301) {
         const redirectUrl = response.headers.location;
         if (redirectUrl) {
+          // Validate redirect URL is HTTPS
+          if (!redirectUrl.startsWith('https://')) {
+            reject(new Error('Redirect must use HTTPS'));
+            return;
+          }
           downloadFile(redirectUrl, dest).then(resolve).catch(reject);
           return;
         }
