@@ -167,6 +167,18 @@ async function downloadPluginval(): Promise<string> {
       let foundPath: string | null = null;
       for (const file of files) {
         if (file.isDirectory()) {
+          // Check for macOS app bundle
+          if (process.platform === 'darwin' && file.name.endsWith('.app')) {
+            const appBinaryPath = join(PLUGINVAL_DIR, file.name, 'Contents', 'MacOS', config.pluginvalExe);
+            console.log(`Checking macOS app bundle: ${appBinaryPath}`);
+            if (existsSync(appBinaryPath)) {
+              foundPath = appBinaryPath;
+              console.log(`Found binary in app bundle: ${foundPath}`);
+              break;
+            }
+          }
+
+          // Check direct subdirectory
           const subFiles = readdirSync(join(PLUGINVAL_DIR, file.name));
           console.log(`Contents of ${file.name}:`, subFiles.join(', '));
 
