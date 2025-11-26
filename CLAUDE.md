@@ -49,6 +49,7 @@ git worktree remove ../srvb-claude-14
 ```
 
 Benefits:
+
 - Work on multiple branches simultaneously without constant switching
 - No need to stash/unstash changes
 - Each worktree has its own working directory
@@ -56,16 +57,50 @@ Benefits:
 ### 4. Development Process
 
 **Before making changes:**
+
 - Read relevant code and documentation
 - Understand the existing patterns and conventions
 - Plan the minimal changes needed
 
 **Core principle: Write as little code as possible**
+
 - Prefer editing existing files over creating new ones
 - Reuse existing patterns and utilities
 - Keep implementations simple and focused
 
-### 5. Pre-Push Quality Checks
+### 5. Git Pre-Commit Hooks
+
+**Automatic quality checks run before every commit:**
+
+The repository uses git pre-commit hooks to ensure code quality:
+
+- **ESLint**: Automatically fixes linting errors in staged files
+- **Prettier**: Formats staged files according to project style
+
+These hooks run automatically via `lint-staged` and `simple-git-hooks`.
+
+**What happens on commit:**
+
+1. You run `git commit`
+2. Pre-commit hook runs automatically
+3. ESLint fixes linting issues in staged `.ts`, `.tsx`, `.js`, `.jsx` files
+4. Prettier formats all staged files
+5. Fixed files are automatically added to the commit
+6. Commit proceeds if no errors
+
+**First-time setup:**
+
+```bash
+pnpm install  # Automatically installs hooks via prepare script
+```
+
+**If hooks don't work:**
+
+```bash
+pnpm run prepare  # Manually reinstall hooks
+```
+
+### 6. Pre-Push Quality Checks
 
 **Run these checks locally before pushing:**
 
@@ -83,12 +118,13 @@ pnpm run build
 **Note:** Always use `pnpm` for package management, never `npm`.
 
 **Do not push until:**
+
 - ✅ All linter errors are resolved
 - ✅ All tests pass
 - ✅ Build completes successfully
 - ✅ Any bugs discovered during testing are fixed
 
-### 6. Create Pull Request
+### 7. Create Pull Request
 
 Once local checks pass:
 
@@ -101,17 +137,19 @@ gh pr create --title "Brief description" --body "Detailed description" --base ma
 ```
 
 **PR Description should include:**
+
 - Summary of changes
 - Why the changes were made
 - How to test/verify the changes
 - Reference to the issue: `Fixes #<number>`
 - Generated with Claude Code footer
 
-### 7. Monitor PR Status
+### 8. Monitor PR Status
 
 After creating the PR:
 
 1. **Check CI status:**
+
    ```bash
    gh pr checks
    ```
@@ -203,24 +241,28 @@ gh pr view            # View current PR
 ## Important Notes
 
 ### Git Worktrees
+
 - Preferred over branch switching
 - Allows parallel work on multiple issues
 - Each worktree is independent
 - Clean up worktrees when done
 
 ### Dependencies
+
 - **Always use `pnpm` for package management (never use `npm`)**
 - Lock files should be committed
 - Native code depends on JUCE submodules
 - When adding packages: `pnpm add <package>` or `pnpm add -D <package>` for dev dependencies
 
 ### CI/CD
+
 - Tests run on macOS (required for native builds)
 - Build verification checks artifact existence
 - Path filters skip builds for docs/config changes
 - Claude Code Review runs on PR open and manual trigger
 
 ### Communication
+
 - Always reference issue numbers in commits
 - Use conventional commit messages
 - Include "Fixes #X" in PR descriptions
@@ -229,6 +271,7 @@ gh pr view            # View current PR
 ## Anti-Patterns to Avoid
 
 ❌ **Don't:**
+
 - Push without running tests
 - Create new files unnecessarily
 - Skip the linting step
@@ -237,6 +280,7 @@ gh pr view            # View current PR
 - Push broken code and "fix it in CI"
 
 ✅ **Do:**
+
 - Start from a clean main branch
 - Run all quality checks locally
 - Write minimal, focused code
@@ -246,4 +290,4 @@ gh pr view            # View current PR
 
 ---
 
-*This workflow ensures high code quality, consistent patterns, and efficient collaboration between Claude Code and human developers.*
+_This workflow ensures high code quality, consistent patterns, and efficient collaboration between Claude Code and human developers._
