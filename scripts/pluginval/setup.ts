@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
@@ -9,14 +9,27 @@ import { readFile } from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const rootDir = join(__dirname, '..');
+const rootDir = join(__dirname, '../..');
+
+interface PlatformConfig {
+  downloadUrl: string;
+  executable: string;
+  isAppBundle: boolean;
+}
+
+interface Config {
+  version: string;
+  cacheDir: string;
+  pluginName: string;
+  platforms: Record<string, PlatformConfig>;
+}
 
 // Load config
-const configPath = join(rootDir, 'tests', 'pluginval.config.json');
-const config = JSON.parse(await readFile(configPath, 'utf-8'));
+const configPath = join(__dirname, 'config.json');
+const config: Config = JSON.parse(await readFile(configPath, 'utf-8'));
 
 const PLUGINVAL_DIR = join(rootDir, config.cacheDir);
-const platform = process.platform;
+const platform = process.platform as string;
 
 if (!config.platforms[platform]) {
   console.error(`Unsupported platform: ${platform}`);
@@ -25,7 +38,7 @@ if (!config.platforms[platform]) {
 
 const platformConfig = config.platforms[platform];
 
-async function downloadFile(url, dest) {
+async function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       if (response.statusCode === 302 || response.statusCode === 301) {
@@ -72,7 +85,7 @@ async function downloadFile(url, dest) {
   });
 }
 
-function extractZip(zipPath, destDir) {
+function extractZip(zipPath: string, destDir: string): void {
   if (platform === 'win32') {
     execFileSync('powershell', [
       '-command',
@@ -88,7 +101,7 @@ function extractZip(zipPath, destDir) {
   }
 }
 
-function findBinary() {
+function findBinary(): string {
   const expectedPath = join(PLUGINVAL_DIR, platformConfig.executable);
 
   // Check expected location first
@@ -126,7 +139,7 @@ function findBinary() {
   );
 }
 
-async function setup() {
+async function setup(): Promise<string> {
   console.log(`Setting up pluginval ${config.version}...`);
 
   // Create cache directory
@@ -177,7 +190,8 @@ async function setup() {
         // Ignore cleanup errors
       }
     }
-    console.error('✗ Setup failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('✗ Setup failed:', errorMessage);
     process.exit(1);
   }
 }

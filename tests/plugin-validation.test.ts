@@ -5,7 +5,7 @@ import { join } from 'path';
 import { readFile } from 'fs/promises';
 
 // Load pluginval configuration
-const configPath = join(process.cwd(), 'tests', 'pluginval.config.json');
+const configPath = join(process.cwd(), 'scripts', 'pluginval', 'config.json');
 const config = JSON.parse(await readFile(configPath, 'utf-8'));
 
 const PLUGINVAL_DIR = join(process.cwd(), config.cacheDir);
