@@ -38,7 +38,12 @@
   },
   "wireit": {
     "build": {
-      "command": "pnpm run build-native && pnpm run build-dsp && pnpm run build-ui"
+      "command": "node -e \"process.exit(0)\"",
+      "dependencies": [
+        "build-dsp",
+        "build-ui",
+        "build-native"
+      ]
     },
     "build-dsp": {
       "command": "pnpm --filter dsp build",
@@ -51,6 +56,9 @@
     },
     "build-ui": {
       "command": "pnpm --filter frontend build",
+      "dependencies": [
+        "build-dsp"
+      ],
       "files": [
         "packages/frontend/**/*.{js,ts}"
       ],
@@ -60,6 +68,9 @@
     },
     "build-native": {
       "command": "zx scripts/build-native.mjs",
+      "dependencies": [
+        "build-ui"
+      ],
       "files": [
         "native/**/*.{cpp,h}",
         "native/CMakeLists.txt",
@@ -105,6 +116,7 @@
     "prettier": "^3.6.2",
     "simple-git-hooks": "^2.13.1",
     "tailwindcss": "^3.3.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.9",
     "wireit": "^0.14.12",
