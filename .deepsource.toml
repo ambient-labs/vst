@@ -18,7 +18,8 @@ exclude_patterns = [
   "pnpm-lock.yaml",
   "package-lock.json",
   ".wireit/**",
-  ".worktrees/**"
+  ".worktrees/**",
+  "scripts/**"
 ]
 
 [[analyzers]]
