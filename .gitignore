@@ -29,3 +29,4 @@ public/dsp.main.js
 log.txt
 
 .devcontainer
+bin/deepsource
