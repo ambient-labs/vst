@@ -67,6 +67,17 @@ target_compile_definitions(${TARGET_NAME}
   JUCE_VST3_CAN_REPLACE_VST2=0
   JUCE_USE_CURL=0)
 
+# Link GTK and WebKit for Linux WebView support
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(gtk3 REQUIRED gtk+-3.0 IMPORTED_TARGET)
+  # Try webkit2gtk-4.1 first, fall back to 4.0
+  pkg_check_modules(webkit2 webkit2gtk-4.1 IMPORTED_TARGET)
+  if (NOT webkit2_FOUND)
+    pkg_check_modules(webkit2 REQUIRED webkit2gtk-4.0 IMPORTED_TARGET)
+  endif()
+endif()
+
 target_link_libraries(${TARGET_NAME}
   PRIVATE
   juce::juce_audio_basics
@@ -82,3 +93,8 @@ target_link_libraries(${TARGET_NAME}
   juce::juce_gui_basics
   juce::juce_gui_extra
   runtime)
+
+# Link GTK and WebKit on Linux
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  target_link_libraries(${TARGET_NAME} PRIVATE pthread PkgConfig::gtk3 PkgConfig::webkit2)
+endif()
