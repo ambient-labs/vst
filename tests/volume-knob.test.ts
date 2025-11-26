@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import OfflineRenderer from '@elemaudio/offline-renderer';
 import { el } from '@elemaudio/core';
-import srvb from '../dsp/srvb.js';
+import srvb from '../packages/dsp/srvb.js';
 
 const SAMPLE_RATE = 44100;
 const BLOCK_SIZE = 512;
