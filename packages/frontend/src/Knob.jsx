@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import ResizeObserver from 'resize-observer-polyfill';
 
 import DragBehavior from './DragBehavior';
@@ -94,4 +94,4 @@ function Knob(props) {
   );
 }
 
-export default React.memo(Knob);
+export default memo(Knob);
