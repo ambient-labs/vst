@@ -2,6 +2,38 @@
 
 This document outlines the workflow and conventions for Claude Code when working on this repository.
 
+## Sandbox Mode
+
+Claude Code runs in sandboxed mode by default. This affects how commands should be executed:
+
+**Key constraints:**
+- Write access is limited to the project directory and `/tmp/claude/`
+- Network access is restricted to whitelisted hosts
+- Some shell redirections may fail due to read-only temp directories
+
+**Best practices for sandbox mode:**
+
+1. **Use Claude Code's built-in tools instead of shell equivalents:**
+   - Use `Read` tool instead of `cat`, `head`, `tail`
+   - Use `Glob` tool instead of `find` or `ls` for file discovery
+   - Use `Grep` tool instead of `grep` or `rg`
+   - Use `Edit` tool instead of `sed` or `awk`
+   - Use `Write` tool instead of `echo >` or heredocs
+
+2. **Avoid shell patterns that fail in sandbox:**
+   - Don't use `2>/dev/null` or other redirections in complex pipelines
+   - Don't pipe through `head`/`tail` - use tool parameters instead
+   - Don't use `ls` for file exploration - use `Glob` tool
+
+3. **For temporary files:**
+   - Use `/tmp/claude/` directory (TMPDIR is set automatically)
+   - Don't write to `/tmp` directly
+
+4. **When sandbox causes failures:**
+   - Look for "Read-only file system" or "Operation not permitted" errors
+   - These indicate sandbox restrictions, not code bugs
+   - Retry with sandbox disabled only when necessary
+
 ## Workflow Overview
 
 All development work follows this structured process:
