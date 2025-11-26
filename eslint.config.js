@@ -67,6 +67,8 @@ export default [
       'public/',
       'pnpm-lock.yaml',
       '.devcontainer/',
+      '.wireit/',
+      '.worktrees/',
     ],
   },
 ];
