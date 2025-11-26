@@ -16,7 +16,7 @@ export default function Interface(props) {
     thumbColor: '#F8FAFC',
   };
 
-  let params = manifest.parameters.map(({paramId, name, min, max, defaultValue}) => {
+  let params = manifest.parameters.map(({paramId, name}) => {
     let currentValue = props[paramId] || 0;
 
     return {
