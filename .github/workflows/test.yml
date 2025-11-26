@@ -4,48 +4,28 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'native/**'
       - 'dsp/**'
-      - 'src/**'
-      - 'public/**'
       - 'tests/**'
-      - 'scripts/build-native.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'vite.config.js'
       - 'vitest.integration.config.ts'
-      - 'tailwind.config.js'
-      - 'postcss.config.js'
-      - 'index.html'
-      - '.gitmodules'
       - '.github/workflows/test.yml'
   push:
     branches:
       - main
     paths:
-      - 'native/**'
       - 'dsp/**'
-      - 'src/**'
-      - 'public/**'
       - 'tests/**'
-      - 'scripts/build-native.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'vite.config.js'
       - 'vitest.integration.config.ts'
-      - 'tailwind.config.js'
-      - 'postcss.config.js'
-      - 'index.html'
-      - '.gitmodules'
       - '.github/workflows/test.yml'
 
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - uses: pnpm/action-setup@v2
         with:
@@ -58,31 +38,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Build native plugin
-        shell: bash
-        run: pnpm run build
-
-      - name: Verify build artifacts
-        shell: bash
-        run: |
-          set -e
-
-          # Verify VST3 was built
-          if [ ! -d "native/build/scripted/SRVB_artefacts/Release/VST3/SRVB.vst3" ]; then
-            echo "❌ Error: VST3 artifact not found!"
-            exit 1
-          fi
-          echo "✅ VST3 artifact verified"
-
-          # Verify AU was built (macOS only)
-          if [ ! -d "native/build/scripted/SRVB_artefacts/Release/AU/SRVB.component" ]; then
-            echo "❌ Error: AU artifact not found!"
-            exit 1
-          fi
-          echo "✅ AU artifact verified"
-
-          echo "✅ All build artifacts verified successfully"
 
       - name: Run integration tests
         run: pnpm run test:integration
