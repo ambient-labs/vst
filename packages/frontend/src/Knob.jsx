@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ResizeObserver from 'resize-observer-polyfill';
 
 import DragBehavior from './DragBehavior';
@@ -55,14 +55,14 @@ function Knob(props) {
     height: 0,
   });
 
-  let {className, meterColor, knobColor, thumbColor, ...other} = props;
-  let classes = cx(className, 'relative touch-none');
+  const {className, meterColor, knobColor, thumbColor, ...other} = props;
+  const classes = cx(className, 'relative touch-none');
 
   useEffect(function() {
     const canvas = canvasRef.current;
 
     observerRef.current = new ResizeObserver(function(entries) {
-      for (let entry of entries) {
+      for (const entry of entries) {
         setBounds({
           width: 2 * entry.contentRect.width,
           height: 2 * entry.contentRect.height,

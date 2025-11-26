@@ -9,7 +9,7 @@ export class RefMap {
 
   getOrCreate(name, type, props, children) {
     if (!this._map.has(name)) {
-      let ref = this._core.createRef(type, props, children);
+      const ref = this._core.createRef(type, props, children);
       this._map.set(name, ref);
     }
 
@@ -19,7 +19,7 @@ export class RefMap {
   update(name, props) {
     invariant(this._map.has(name), "Oops, trying to update a ref that doesn't exist");
 
-    let [_node, setter] = this._map.get(name);
+    const [, setter] = this._map.get(name);
     setter(props);
   }
 }

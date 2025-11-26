@@ -9,7 +9,7 @@ import './index.css'
 
 
 // Initial state management
-const store = createStore(() => {});
+const store = createStore(() => ({}));
 const useStore = createHooks(store);
 
 const errorStore = createStore(() => ({ error: null }));
@@ -85,11 +85,15 @@ globalThis.__receiveError__ = (err) => {
   errorStore.setState({ error: err });
 };
 
+// Callback functions for Interface component
+const resetErrorState = () => errorStore.setState({ error: null });
+const clearLogs = () => logStore.setState({ logs: [] });
+
 // Mount the interface
-function App(props) {
-  let state = useStore();
-  let {error} = useErrorStore();
-  let {logs = []} = useLogStore();
+function App() {
+  const state = useStore();
+  const {error} = useErrorStore();
+  const {logs = []} = useLogStore();
 
   return (
     <Interface
@@ -98,8 +102,8 @@ function App(props) {
       logs={logs}
       requestParamValueUpdate={requestParamValueUpdate}
       updateDSPCode={updateDSPCode}
-      resetErrorState={() => errorStore.setState({ error: null })}
-      clearLogs={() => logStore.setState({ logs: [] })} />
+      resetErrorState={resetErrorState}
+      clearLogs={clearLogs} />
   );
 }
 
