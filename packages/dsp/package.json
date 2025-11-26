@@ -1,0 +1,17 @@
+{
+  "name": "@srvb/dsp",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "esbuild main.js --watch --bundle --outfile=../frontend/public/dsp.main.js",
+    "build": "esbuild main.js --bundle --outfile=../frontend/public/dsp.main.js"
+  },
+  "dependencies": {
+    "@elemaudio/core": "^4.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.17.8",
+    "typescript": "^5.9.3"
+  }
+}
