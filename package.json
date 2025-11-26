@@ -13,6 +13,10 @@
     "build-dsp": "wireit",
     "build-ui": "wireit",
     "build": "wireit",
+    "build:native:clean": "rimraf native/build",
+    "build:dsp:clean": "rimraf packages/frontend/public/dsp.main.js",
+    "build:ui:clean": "rimraf packages/frontend/dist",
+    "build:clean": "pnpm run build:native:clean && pnpm run build:dsp:clean && pnpm run build:ui:clean",
     "preview": "pnpm --filter @srvb/frontend preview",
     "setup-pluginval": "wireit",
     "test:integration": "wireit",
@@ -38,12 +42,7 @@
   },
   "wireit": {
     "build": {
-      "command": "node -e \"process.exit(0)\"",
-      "dependencies": [
-        "build-dsp",
-        "build-ui",
-        "build-native"
-      ]
+      "command": "pnpm run build-native && pnpm run build-dsp && pnpm run build-ui"
     },
     "build-dsp": {
       "command": "pnpm --filter dsp build",
