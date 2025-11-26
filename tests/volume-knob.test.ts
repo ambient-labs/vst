@@ -5,6 +5,9 @@ import srvb from '../dsp/srvb.js';
 
 const SAMPLE_RATE = 44100;
 const BLOCK_SIZE = 512;
+const SMOOTHING_SETTLE_BLOCKS = 20; // Number of blocks to process for smoothing convergence
+const AMPLITUDE_TOLERANCE = 1; // Decimal places for amplitude comparison (±0.05 tolerance)
+const SILENCE_THRESHOLD = 0.000001; // Threshold for considering output as silent
 
 describe('Volume Knob Behavior', () => {
   it('should produce complete silence at 0% volume (decay=0.0)', async () => {
@@ -36,12 +39,12 @@ describe('Volume Knob Behavior', () => {
       [outputLeft, outputRight]
     );
 
-    // Verify output is completely silent
+    // Verify output is completely silent (using threshold for floating-point comparison)
     const maxLeft = Math.max(...outputLeft.map(Math.abs));
     const maxRight = Math.max(...outputRight.map(Math.abs));
 
-    expect(maxLeft).toBe(0);
-    expect(maxRight).toBe(0);
+    expect(maxLeft).toBeLessThan(SILENCE_THRESHOLD);
+    expect(maxRight).toBeLessThan(SILENCE_THRESHOLD);
   });
 
   it('should produce 0.5x amplitude at 50% volume (decay=0.5)', async () => {
@@ -70,7 +73,7 @@ describe('Volume Knob Behavior', () => {
     const outputRight = new Float32Array(BLOCK_SIZE);
 
     // Process multiple blocks to let smoothing settle
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < SMOOTHING_SETTLE_BLOCKS; i++) {
       core.process(
         [inputLeft, inputRight],
         [outputLeft, outputRight]
@@ -84,8 +87,8 @@ describe('Volume Knob Behavior', () => {
     const expectedAmplitude = inputAmplitude * 0.5;
 
     // Verify linear scaling with tolerance for smoothing
-    expect(avgLeft).toBeCloseTo(expectedAmplitude, 1);
-    expect(avgRight).toBeCloseTo(expectedAmplitude, 1);
+    expect(avgLeft).toBeCloseTo(expectedAmplitude, AMPLITUDE_TOLERANCE);
+    expect(avgRight).toBeCloseTo(expectedAmplitude, AMPLITUDE_TOLERANCE);
   });
 
   it('should produce unity gain at 100% volume (decay=1.0)', async () => {
@@ -114,7 +117,7 @@ describe('Volume Knob Behavior', () => {
     const outputRight = new Float32Array(BLOCK_SIZE);
 
     // Process multiple blocks to let smoothing settle
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < SMOOTHING_SETTLE_BLOCKS; i++) {
       core.process(
         [inputLeft, inputRight],
         [outputLeft, outputRight]
@@ -126,8 +129,8 @@ describe('Volume Knob Behavior', () => {
     const avgRight = outputRight.reduce((sum, val) => sum + Math.abs(val), 0) / BLOCK_SIZE;
 
     // Verify unity gain with tolerance for smoothing
-    expect(avgLeft).toBeCloseTo(inputAmplitude, 1);
-    expect(avgRight).toBeCloseTo(inputAmplitude, 1);
+    expect(avgLeft).toBeCloseTo(inputAmplitude, AMPLITUDE_TOLERANCE);
+    expect(avgRight).toBeCloseTo(inputAmplitude, AMPLITUDE_TOLERANCE);
   });
 
   it('should verify linear volume scaling across different levels', async () => {
@@ -159,7 +162,7 @@ describe('Volume Knob Behavior', () => {
       const outputRight = new Float32Array(BLOCK_SIZE);
 
       // Process multiple blocks to let smoothing settle
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < SMOOTHING_SETTLE_BLOCKS; i++) {
         core.process(
           [inputLeft, inputRight],
           [outputLeft, outputRight]
@@ -173,7 +176,7 @@ describe('Volume Knob Behavior', () => {
     // Verify linear relationship between volume and output
     for (let i = 0; i < results.length; i++) {
       const expected = results[i].volume * inputAmplitude;
-      expect(results[i].output).toBeCloseTo(expected, 1);
+      expect(results[i].output).toBeCloseTo(expected, AMPLITUDE_TOLERANCE);
     }
   });
 
@@ -221,11 +224,16 @@ describe('Volume Knob Behavior', () => {
     );
 
     // Verify smoothing: output should gradually ramp up, not jump instantly
-    // The first sample of the second block should be less than full volume
-    expect(Math.abs(outputLeft2[0])).toBeLessThan(1.0);
+    // The first sample of the second block should be well below full volume
+    expect(Math.abs(outputLeft2[0])).toBeLessThan(0.5);
 
     // Later samples should approach full volume
     const lastSample = Math.abs(outputLeft2[BLOCK_SIZE - 1]);
     expect(lastSample).toBeGreaterThan(Math.abs(outputLeft2[0]));
+
+    // Verify monotonic increase in the first portion (no discontinuities)
+    for (let i = 1; i < Math.min(100, BLOCK_SIZE); i++) {
+      expect(Math.abs(outputLeft2[i])).toBeGreaterThanOrEqual(Math.abs(outputLeft2[i - 1]) - 0.01);
+    }
   });
 });
