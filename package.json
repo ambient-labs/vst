@@ -1,20 +1,19 @@
 {
-  "name": "ui",
+  "name": "@srvb/root",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "rimraf packages/frontend/dist",
     "predev": "pnpm run clean",
     "prebuild": "pnpm run clean",
-    "dev": "pnpm run dev-native && concurrently \"pnpm run dev-dsp\" \"vite\"",
+    "dev": "pnpm run dev-native && concurrently \"pnpm --filter @srvb/dsp dev\" \"pnpm --filter @srvb/frontend dev\"",
     "dev-native": "zx scripts/build-native.mjs --dev",
-    "dev-dsp": "esbuild dsp/main.js --watch --bundle --outfile=public/dsp.main.js",
     "build-native": "wireit",
     "build-dsp": "wireit",
     "build-ui": "wireit",
     "build": "wireit",
-    "preview": "vite preview",
+    "preview": "pnpm --filter @srvb/frontend preview",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -46,29 +45,29 @@
       ]
     },
     "build-dsp": {
-      "command": "esbuild dsp/main.js --bundle --outfile=public/dsp.main.js",
+      "command": "pnpm --filter @srvb/dsp build",
       "files": [
-        "dsp/**/*.{js,ts}"
+        "packages/dsp/**/*.{js,ts}"
       ],
       "output": [
-        "public/dsp.main.js"
+        "packages/frontend/public/dsp.main.js"
       ]
     },
     "build-ui": {
-      "command": "vite build",
+      "command": "pnpm --filter @srvb/frontend build",
       "dependencies": [
         "build-dsp"
       ],
       "files": [
-        "src/**/*.{ts,tsx,jsx,css}",
-        "index.html",
-        "vite.config.js",
-        "tailwind.config.js",
-        "postcss.config.js",
-        "public/**/*"
+        "packages/frontend/src/**/*.{ts,tsx,jsx,css}",
+        "packages/frontend/index.html",
+        "packages/frontend/vite.config.js",
+        "packages/frontend/tailwind.config.js",
+        "packages/frontend/postcss.config.js",
+        "packages/frontend/public/**/*"
       ],
       "output": [
-        "dist/**"
+        "packages/frontend/dist/**"
       ]
     },
     "build-native": {
@@ -87,38 +86,25 @@
     }
   },
   "dependencies": {
-    "@elemaudio/core": "^4.0.1",
-    "@heroicons/react": "^2.0.18",
-    "@use-gesture/react": "^10.2.27",
     "cpy-cli": "^4.2.0",
-    "esbuild": "^0.17.8",
-    "invariant": "^2.2.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "resize-observer-polyfill": "^1.5.1",
-    "rimraf": "^5.0.0",
-    "zustand": "^4.3.8"
+    "rimraf": "^5.0.0"
   },
   "devDependencies": {
+    "@elemaudio/core": "^4.0.1",
     "@elemaudio/offline-renderer": "^4.0.3",
     "@types/node": "^24.10.1",
-    "@types/react": "^18.0.37",
-    "@types/react-dom": "^18.0.11",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
-    "@vitejs/plugin-react": "^4.0.0",
-    "autoprefixer": "^10.4.14",
     "concurrently": "^8.2.2",
-    "eruda": "^3.4.3",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "invariant": "^2.2.4",
     "lint-staged": "^16.2.7",
     "postcss": "^8.4.24",
     "prettier": "^3.6.2",
     "simple-git-hooks": "^2.13.1",
     "tailwindcss": "^3.3.2",
     "typescript": "^5.9.3",
-    "vite": "^4.3.9",
     "vitest": "^4.0.9",
     "wireit": "^0.14.12",
     "zx": "^7.2.3"

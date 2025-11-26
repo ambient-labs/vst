@@ -18,7 +18,7 @@ function pubDirReloadPlugin() {
   return {
     name: 'pubDirReload',
     handleHotUpdate({file, modules, server}) {
-      if (file.includes('public/dsp.main.js')) {
+      if (file.includes('dsp.main.js')) {
         server.ws.send({
           type: 'custom',
           event: 'reload-dsp',
