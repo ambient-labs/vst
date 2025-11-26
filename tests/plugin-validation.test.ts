@@ -1,49 +1,53 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-import https from 'https';
+import { readFile } from 'fs/promises';
 
-const PLUGINVAL_VERSION = 'v1.0.3';
-const PLUGINVAL_DIR = join(process.cwd(), 'node_modules', '.cache', 'pluginval');
+// Load pluginval configuration
+const configPath = join(process.cwd(), 'tests', 'pluginval.config.json');
+const config = JSON.parse(await readFile(configPath, 'utf-8'));
+
+const PLUGINVAL_DIR = join(process.cwd(), config.cacheDir);
 const BUILD_TYPE = process.env.BUILD_TYPE || 'Release';
-const PLUGIN_NAME = 'SRVB';
+const platformConfig = config.platforms[process.platform];
 
-interface PlatformConfig {
-  pluginvalUrl: string;
-  pluginvalExe: string;
-  unzipCommand: string[];
+if (!platformConfig) {
+  throw new Error(`Unsupported platform: ${process.platform}`);
 }
 
-const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
-  darwin: {
-    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_macOS.zip`,
-    pluginvalExe: 'pluginval',
-    unzipCommand: ['unzip', '-o'],
-  },
-  linux: {
-    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Linux.zip`,
-    pluginvalExe: 'pluginval',
-    unzipCommand: ['unzip', '-o'],
-  },
-  win32: {
-    pluginvalUrl: `https://github.com/Tracktion/pluginval/releases/download/${PLUGINVAL_VERSION}/pluginval_Windows.zip`,
-    pluginvalExe: 'pluginval.exe',
-    unzipCommand: ['powershell', '-command', 'Expand-Archive'],
-  },
-};
+function getPluginvalPath(): string {
+  const expectedPath = join(PLUGINVAL_DIR, platformConfig.executable);
 
-function getPlatformConfig(): PlatformConfig {
-  const config = PLATFORM_CONFIGS[process.platform];
-  if (!config) {
-    throw new Error(`Unsupported platform: ${process.platform}`);
+  // Check expected location first
+  if (existsSync(expectedPath)) {
+    return expectedPath;
   }
-  return config;
-}
 
-function getPluginvalExecutable(): string {
-  const config = getPlatformConfig();
-  return join(PLUGINVAL_DIR, config.pluginvalExe);
+  // Search for binary in subdirectories
+  const files = readdirSync(PLUGINVAL_DIR, { withFileTypes: true });
+
+  for (const file of files) {
+    if (file.isDirectory()) {
+      // Check for macOS app bundle
+      if (process.platform === 'darwin' && file.name.endsWith('.app')) {
+        const appBinaryPath = join(PLUGINVAL_DIR, file.name, 'Contents', 'MacOS', platformConfig.executable);
+        if (existsSync(appBinaryPath)) {
+          return appBinaryPath;
+        }
+      }
+
+      // Check direct subdirectory
+      const subFiles = readdirSync(join(PLUGINVAL_DIR, file.name));
+      if (subFiles.includes(platformConfig.executable)) {
+        return join(PLUGINVAL_DIR, file.name, platformConfig.executable);
+      }
+    }
+  }
+
+  throw new Error(
+    `Pluginval binary not found. Run 'pnpm run setup-pluginval' first.`
+  );
 }
 
 function getPluginPath(): string {
@@ -52,183 +56,11 @@ function getPluginPath(): string {
     'native',
     'build',
     'scripted',
-    `${PLUGIN_NAME}_artefacts`,
+    `${config.pluginName}_artefacts`,
     BUILD_TYPE,
     'VST3',
-    `${PLUGIN_NAME}.vst3`
+    `${config.pluginName}.vst3`
   );
-}
-
-async function downloadFile(url: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        const redirectUrl = response.headers.location;
-        if (redirectUrl) {
-          // Validate redirect URL is HTTPS
-          if (!redirectUrl.startsWith('https://')) {
-            reject(new Error('Redirect must use HTTPS'));
-            return;
-          }
-          downloadFile(redirectUrl, dest).then(resolve).catch(reject);
-          return;
-        }
-      }
-
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download: ${response.statusCode}`));
-        return;
-      }
-
-      const fileStream = createWriteStream(dest);
-      response.pipe(fileStream);
-
-      fileStream.on('finish', () => {
-        fileStream.close();
-
-        // Validate file was actually downloaded
-        try {
-          const stats = statSync(dest);
-          if (stats.size === 0) {
-            reject(new Error('Downloaded file is empty'));
-            return;
-          }
-        } catch (err) {
-          reject(err);
-          return;
-        }
-
-        resolve();
-      });
-
-      fileStream.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-async function extractZip(zipPath: string, destDir: string): Promise<void> {
-  const config = getPlatformConfig();
-
-  if (process.platform === 'win32') {
-    // Windows PowerShell extraction
-    execFileSync('powershell', [
-      '-command',
-      'Expand-Archive',
-      '-Path',
-      zipPath,
-      '-DestinationPath',
-      destDir,
-      '-Force'
-    ], { stdio: 'ignore' });
-  } else {
-    // Unix-like systems (macOS, Linux)
-    execFileSync('unzip', ['-o', zipPath, '-d', destDir], { stdio: 'ignore' });
-  }
-}
-
-async function downloadPluginval(): Promise<string> {
-  const pluginvalExe = getPluginvalExecutable();
-
-  // Check if already downloaded
-  if (existsSync(pluginvalExe)) {
-    console.log('pluginval already downloaded');
-    return pluginvalExe;
-  }
-
-  const config = getPlatformConfig();
-  console.log(`Downloading pluginval ${PLUGINVAL_VERSION}...`);
-
-  // Create cache directory
-  if (!existsSync(PLUGINVAL_DIR)) {
-    mkdirSync(PLUGINVAL_DIR, { recursive: true });
-  }
-
-  // Download pluginval
-  const zipPath = join(PLUGINVAL_DIR, 'pluginval.zip');
-
-  try {
-    await downloadFile(config.pluginvalUrl, zipPath);
-
-    // Extract
-    console.log('Extracting pluginval...');
-    await extractZip(zipPath, PLUGINVAL_DIR);
-
-    // Clean up zip file
-    unlinkSync(zipPath);
-
-    // Verify extraction succeeded
-    if (!existsSync(pluginvalExe)) {
-      // List directory contents for debugging
-      console.log('Binary not at expected location. Searching in extracted files...');
-      const files = readdirSync(PLUGINVAL_DIR, { withFileTypes: true });
-      console.log('Directory contents:', files.map(f => f.name).join(', '));
-
-      // Try to find the binary in subdirectories
-      let foundPath: string | null = null;
-      for (const file of files) {
-        if (file.isDirectory()) {
-          // Check for macOS app bundle
-          if (process.platform === 'darwin' && file.name.endsWith('.app')) {
-            const appBinaryPath = join(PLUGINVAL_DIR, file.name, 'Contents', 'MacOS', config.pluginvalExe);
-            console.log(`Checking macOS app bundle: ${appBinaryPath}`);
-            if (existsSync(appBinaryPath)) {
-              foundPath = appBinaryPath;
-              console.log(`Found binary in app bundle: ${foundPath}`);
-              break;
-            }
-          }
-
-          // Check direct subdirectory
-          const subFiles = readdirSync(join(PLUGINVAL_DIR, file.name));
-          console.log(`Contents of ${file.name}:`, subFiles.join(', '));
-
-          const binaryName = config.pluginvalExe;
-          if (subFiles.includes(binaryName)) {
-            foundPath = join(PLUGINVAL_DIR, file.name, binaryName);
-            console.log(`Found binary at: ${foundPath}`);
-            break;
-          }
-        } else if (file.name === config.pluginvalExe) {
-          foundPath = join(PLUGINVAL_DIR, file.name);
-          console.log(`Found binary at root: ${foundPath}`);
-          break;
-        }
-      }
-
-      if (!foundPath || !existsSync(foundPath)) {
-        throw new Error(
-          `Pluginval binary '${config.pluginvalExe}' not found after extraction. ` +
-          `Expected at: ${pluginvalExe}. ` +
-          `Searched in: ${PLUGINVAL_DIR} and subdirectories.`
-        );
-      }
-
-      // Make executable and return the found path
-      if (process.platform === 'darwin' || process.platform === 'linux') {
-        chmodSync(foundPath, 0o755);
-      }
-      console.log('pluginval ready');
-      return foundPath;
-    }
-
-    // Make executable on Unix systems
-    if (process.platform === 'darwin' || process.platform === 'linux') {
-      chmodSync(pluginvalExe, 0o755);
-    }
-
-    console.log('pluginval ready');
-    return pluginvalExe;
-  } catch (error) {
-    // Clean up partial download on error
-    if (existsSync(zipPath)) {
-      try {
-        unlinkSync(zipPath);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-    throw error;
-  }
 }
 
 function runPluginval(pluginvalPath: string, pluginPath: string, args: string[]): string {
@@ -244,7 +76,6 @@ function runPluginval(pluginvalPath: string, pluginPath: string, args: string[])
     );
     return output;
   } catch (error) {
-    // Handle execution errors with proper type checking
     if (error instanceof Error) {
       const execError = error as Error & { stdout?: string; stderr?: string; status?: number };
 
@@ -268,9 +99,8 @@ describe('Plugin Validation', () => {
   let pluginvalPath: string;
   let pluginPath: string;
 
-  beforeAll(async () => {
-    // Download pluginval if needed
-    pluginvalPath = await downloadPluginval();
+  beforeAll(() => {
+    pluginvalPath = getPluginvalPath();
     pluginPath = getPluginPath();
 
     // Verify plugin exists
@@ -280,11 +110,11 @@ describe('Plugin Validation', () => {
       );
     }
 
-    console.log(`Plugin path: ${pluginPath}`);
-    console.log(`pluginval path: ${pluginvalPath}`);
-  }, 120000); // Allow 2 minutes for download
+    console.log(`Plugin: ${pluginPath}`);
+    console.log(`Pluginval: ${pluginvalPath}`);
+  });
 
-  it('should pass pluginval VST3 compliance tests', async () => {
+  it('should pass pluginval VST3 compliance tests', () => {
     console.log('Running pluginval on VST3 plugin...');
 
     const output = runPluginval(pluginvalPath, pluginPath, [
@@ -297,17 +127,11 @@ describe('Plugin Validation', () => {
     ]);
 
     console.log('pluginval output:', output);
-
-    // pluginval exits with code 0 on success, non-zero on failure
-    // The successful execution of runPluginval (without throwing) means validation passed
     expect(output).toBeDefined();
-
-    // Optional: Check for success indicators in output
-    // (pluginval's exit code is the primary indicator)
     expect(output.length).toBeGreaterThan(0);
-  }, 180000); // Allow 3 minutes for validation
+  }, 180000);
 
-  it('should load and unload without crashes', async () => {
+  it('should load and unload without crashes', () => {
     console.log('Testing plugin loading stability...');
 
     const output = runPluginval(pluginvalPath, pluginPath, [
@@ -320,13 +144,11 @@ describe('Plugin Validation', () => {
     ]);
 
     console.log('Load test output:', output);
-
-    // Successful execution means no crashes occurred
     expect(output).toBeDefined();
     expect(output.length).toBeGreaterThan(0);
-  }, 90000); // Allow 90 seconds
+  }, 90000);
 
-  it('should handle parameter changes correctly', async () => {
+  it('should handle parameter changes correctly', () => {
     console.log('Testing parameter handling...');
 
     const output = runPluginval(pluginvalPath, pluginPath, [
@@ -341,8 +163,6 @@ describe('Plugin Validation', () => {
     ]);
 
     console.log('Parameter test output:', output);
-
-    // Successful execution means parameter handling passed
     expect(output).toBeDefined();
     expect(output.length).toBeGreaterThan(0);
   }, 90000);
