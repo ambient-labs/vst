@@ -174,9 +174,9 @@ describe('Volume Knob Behavior', () => {
     }
 
     // Verify linear relationship between volume and output
-    for (let i = 0; i < results.length; i++) {
-      const expected = results[i].volume * inputAmplitude;
-      expect(results[i].output).toBeCloseTo(expected, AMPLITUDE_TOLERANCE);
+    for (const result of results) {
+      const expected = result.volume * inputAmplitude;
+      expect(result.output).toBeCloseTo(expected, AMPLITUDE_TOLERANCE);
     }
   });
 
