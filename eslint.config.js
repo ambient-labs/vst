@@ -22,6 +22,8 @@ export default [
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      curly: 'error',
+      semi: 'error',
     },
   },
   {
@@ -32,6 +34,8 @@ export default [
     },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      curly: 'error',
+      semi: 'error',
     },
   },
   {
