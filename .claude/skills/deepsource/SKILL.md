@@ -142,12 +142,12 @@ DeepSource categorizes issues by:
 
 ## Running DeepSource Locally
 
-Run DeepSource analysis locally before pushing to catch issues early:
+DeepSource is integrated into the project's build system and runs automatically on pre-commit.
 
-### Install the CLI
+### Install the CLI (one-time setup)
 
 ```bash
-curl https://deepsource.io/cli | sh
+pnpm run deepsource:install
 ```
 
 This installs the `deepsource` binary to `./bin/deepsource`.
@@ -155,11 +155,19 @@ This installs the `deepsource` binary to `./bin/deepsource`.
 ### Run Local Analysis
 
 ```bash
-# Run JavaScript/TypeScript analysis
-./bin/deepsource report --analyzer javascript
+# Run via npm script
+pnpm run deepsource
 
-# Run with specific analyzers
-./bin/deepsource report --analyzer javascript --analyzer test-coverage
+# Or directly
+./bin/deepsource report --analyzer javascript
+```
+
+### Pre-commit Hook
+
+DeepSource runs automatically on every commit as part of the pre-commit hook:
+
+```
+pre-commit: pnpm lint-staged && pnpm deepsource
 ```
 
 ### Requirements
@@ -167,8 +175,9 @@ This installs the `deepsource` binary to `./bin/deepsource`.
 - The repository must have a `.deepsource.toml` configuration file
 - The `DEEPSOURCE_DSN` environment variable must be set (sourced from `.env`)
 
-### Benefits of Local Analysis
+### Benefits
 
+- Automatic analysis on every commit
 - Catch issues before pushing
 - Faster feedback than waiting for CI
 - Fix problems before they appear in PR reviews
