@@ -35,6 +35,7 @@ enabled = true
   ]
   module_system = "es-modules"
   dialect = "typescript"
+  globals = ["__postNativeMessage__"]
 
 [[analyzers]]
 name = "cxx"
