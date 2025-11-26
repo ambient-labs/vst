@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "clean": "rimraf packages/frontend/dist",
+    "clean": "pnpm run build:native:clean && pnpm run build:dsp:clean && pnpm run build:ui:clean",
     "predev": "pnpm run clean",
     "prebuild": "pnpm run clean",
     "dev": "pnpm run dev-native && concurrently \"pnpm --filter @srvb/dsp dev\" \"pnpm --filter @srvb/frontend dev\"",
@@ -16,7 +16,6 @@
     "build:native:clean": "rimraf native/build",
     "build:dsp:clean": "rimraf packages/frontend/public/dsp.main.js",
     "build:ui:clean": "rimraf packages/frontend/dist",
-    "build:clean": "pnpm run build:native:clean && pnpm run build:dsp:clean && pnpm run build:ui:clean",
     "preview": "pnpm --filter @srvb/frontend preview",
     "setup-pluginval": "wireit",
     "test:integration": "wireit",
@@ -55,9 +54,6 @@
     },
     "build-ui": {
       "command": "pnpm --filter frontend build",
-      "dependencies": [
-        "build-dsp"
-      ],
       "files": [
         "packages/frontend/**/*.{js,ts}"
       ],
