@@ -9,15 +9,12 @@ All development work follows this structured process:
 ### 1. Start with a GitHub Issue
 
 - Every piece of work begins with a GitHub issue
-- Use `gh issue view <number>` to review issue details
+- Use `gh issue view <number> --json title,body,state` to review issue details (avoids deprecation warnings)
 - Understand the requirements fully before starting
 
 **GitHub Issues vs Discussions:**
 - **Issues**: Track specific, actionable work items (bugs, features, tasks)
 - **Discussions**: Share broader plans, ideas, architecture decisions, and RFCs
-
-**Note on GitHub CLI warnings:**
-When using `gh issue view`, you may see a deprecation warning about "Projects (classic)". This warning is safe to ignore - it doesn't affect the command output. The warning appears because the repository may have legacy project boards.
 
 ### 2. Branch Creation
 
@@ -246,45 +243,6 @@ All AI-generated code goes through the same review process as human-written code
 - Adherence to existing patterns and conventions
 - Test coverage for new functionality
 - Clear, maintainable code over clever solutions
-
-### ElementaryJS Best Practices
-
-When writing or modifying DSP code in `dsp/`, follow these patterns:
-
-**Signal Flow:**
-```javascript
-import { el } from '@elemaudio/core';
-
-// Always clamp parameter values to safe ranges
-const gain = el.max(0.0, el.min(1.0, el.sm(props.gain)));
-
-// Use el.sm() for parameter smoothing to avoid clicks
-const smoothedParam = el.sm(props.paramValue);
-
-// Stereo processing returns [left, right] array
-return [el.mul(gain, xl), el.mul(gain, xr)];
-```
-
-**Renderer Pattern:**
-```javascript
-// Use RefMap for efficient parameter updates without re-rendering
-const refs = new RefMap(core);
-
-// Only re-render when structure changes (e.g., sample rate)
-function shouldRender(prev, next) {
-  return prev === null || prev.sampleRate !== next.sampleRate;
-}
-
-// Update refs for parameter changes (avoids full re-render)
-refs.update('paramName', { value: newValue });
-```
-
-**Key Principles:**
-- Use `el.sm()` to smooth parameter changes and avoid audio artifacts
-- Clamp all user-controllable values to safe ranges with `el.max/el.min`
-- Minimize re-renders by using refs for parameter updates
-- Return stereo pairs as `[left, right]` arrays
-- Use descriptive keys for refs and nodes
 
 ### Security Considerations
 
