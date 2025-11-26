@@ -1,5 +1,3 @@
-import React from 'react';
-
 import Knob from './Knob.jsx';
 
 import manifest from '../public/manifest.json';
@@ -16,8 +14,8 @@ export default function Interface(props) {
     thumbColor: '#F8FAFC',
   };
 
-  let params = manifest.parameters.map(({paramId, name}) => {
-    let currentValue = props[paramId] || 0;
+  const params = manifest.parameters.map(({paramId, name}) => {
+    const currentValue = props[paramId] || 0;
 
     return {
       paramId,
@@ -37,5 +35,4 @@ export default function Interface(props) {
               </div>
             </div>
           ));
-  
 }

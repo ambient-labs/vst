@@ -7,20 +7,20 @@ import srvb from './srvb';
 // First, we initialize a custom Renderer instance that marshals our instruction
 // batches through the __postNativeMessage__ function to direct the underlying native
 // engine.
-let core = new Renderer((batch) => {
+const core = new Renderer((batch) => {
   console.log('Renderer: sending batch, length:', batch.length);
   __postNativeMessage__(JSON.stringify(batch));
 });
 
 // Next, a RefMap for coordinating our refs
-let refs = new RefMap(core);
+const refs = new RefMap(core);
 
 // Holding onto the previous state allows us a quick way to differentiate
 // when we need to fully re-render versus when we can just update refs
 let prevState = null;
 
-function shouldRender(prevState, nextState) {
-  return (prevState === null) || (prevState.sampleRate !== nextState.sampleRate);
+function shouldRender(prev, nextState) {
+  return (prev === null) || (prev.sampleRate !== nextState.sampleRate);
 }
 
 // The important piece: here we register a state change callback with the native
@@ -34,7 +34,7 @@ globalThis.__receiveStateChange__ = (serializedState) => {
   console.log('State change received, sampleRate:', state.sampleRate);
 
   if (shouldRender(prevState, state)) {
-    let stats = core.render(...srvb({
+    const stats = core.render(...srvb({
       key: 'srvb',
       sampleRate: state.sampleRate,
       decay: refs.getOrCreate('decay', 'const', { value: state.decay }, []),
@@ -59,7 +59,7 @@ globalThis.__receiveHydrationData__ = (data) => {
   console.log('Hydrating', Object.keys(payload).length, 'nodes');
   const nodeMap = core._delegate.nodeMap;
 
-  for (let [k, v] of Object.entries(payload)) {
+  for (const [k, v] of Object.entries(payload)) {
     nodeMap.set(parseInt(k, 16), {
       symbol: '__ELEM_NODE__',
       kind: '__HYDRATED__',
