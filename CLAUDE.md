@@ -12,6 +12,13 @@ All development work follows this structured process:
 - Use `gh issue view <number>` to review issue details
 - Understand the requirements fully before starting
 
+**GitHub Issues vs Discussions:**
+- **Issues**: Track specific, actionable work items (bugs, features, tasks)
+- **Discussions**: Share broader plans, ideas, architecture decisions, and RFCs
+
+**Note on GitHub CLI warnings:**
+When using `gh issue view`, you may see a deprecation warning about "Projects (classic)". This warning is safe to ignore - it doesn't affect the command output. The warning appears because the repository may have legacy project boards.
+
 ### 2. Branch Creation
 
 **Always start from an up-to-date main branch:**
@@ -189,6 +196,12 @@ After creating the PR:
 - Test files should verify behavior, not implementation details
 - All tests must pass before pushing
 
+**Tests Must Be Inline with Code Changes:**
+- When adding a feature, include tests in the same PR
+- When fixing a bug, include a regression test in the same PR
+- Do NOT create separate "add tests" PRs - tests belong with the code they test
+- If a change requires new tests, they are part of the same unit of work
+
 ### Building
 
 - Native plugin code requires CMake build
@@ -202,6 +215,94 @@ After creating the PR:
 - Fix linting errors, don't disable rules
 - Maintain consistent code style
 - Run `pnpm run lint` before pushing
+
+### Documentation
+
+**Documentation Must Be Inline with Code Changes:**
+- When adding a feature, include relevant documentation in the same PR
+- Update existing docs if your change affects documented behavior
+- Do NOT create separate "add docs" PRs - docs belong with the code they describe
+- Code comments, JSDoc, and README updates are all part of the same unit of work
+
+**What to Document:**
+- Public APIs and exported functions
+- Complex algorithms or non-obvious logic
+- Configuration options and their effects
+- Breaking changes or migration steps
+
+## AI Code Generation Guidelines
+
+### Code Review for AI-Generated Code
+
+All AI-generated code goes through the same review process as human-written code:
+
+1. **Automated Checks**: CI runs linting, tests, and builds
+2. **Claude Code Review**: Automated review via GitHub Actions provides initial feedback
+3. **Human Review**: Final approval from a human maintainer is required
+
+**Review Focus Areas:**
+- Security vulnerabilities (injection, XSS, unsafe operations)
+- Performance implications (especially in audio processing paths)
+- Adherence to existing patterns and conventions
+- Test coverage for new functionality
+- Clear, maintainable code over clever solutions
+
+### ElementaryJS Best Practices
+
+When writing or modifying DSP code in `dsp/`, follow these patterns:
+
+**Signal Flow:**
+```javascript
+import { el } from '@elemaudio/core';
+
+// Always clamp parameter values to safe ranges
+const gain = el.max(0.0, el.min(1.0, el.sm(props.gain)));
+
+// Use el.sm() for parameter smoothing to avoid clicks
+const smoothedParam = el.sm(props.paramValue);
+
+// Stereo processing returns [left, right] array
+return [el.mul(gain, xl), el.mul(gain, xr)];
+```
+
+**Renderer Pattern:**
+```javascript
+// Use RefMap for efficient parameter updates without re-rendering
+const refs = new RefMap(core);
+
+// Only re-render when structure changes (e.g., sample rate)
+function shouldRender(prev, next) {
+  return prev === null || prev.sampleRate !== next.sampleRate;
+}
+
+// Update refs for parameter changes (avoids full re-render)
+refs.update('paramName', { value: newValue });
+```
+
+**Key Principles:**
+- Use `el.sm()` to smooth parameter changes and avoid audio artifacts
+- Clamp all user-controllable values to safe ranges with `el.max/el.min`
+- Minimize re-renders by using refs for parameter updates
+- Return stereo pairs as `[left, right]` arrays
+- Use descriptive keys for refs and nodes
+
+### Security Considerations
+
+**Code Execution Safety:**
+- The DSP code runs in a sandboxed JavaScript environment within the native plugin
+- Never execute arbitrary user input as code
+- Validate all external inputs before processing
+- Be cautious with `JSON.parse()` - wrap in try/catch
+
+**Build and Dependency Security:**
+- Only use dependencies from trusted sources (npm registry)
+- Review dependency updates for security advisories
+- Native code changes require extra scrutiny for memory safety
+
+**File System Operations:**
+- Scripts should only access expected directories
+- Never write to system directories
+- Validate paths before file operations
 
 ## Project Structure
 
