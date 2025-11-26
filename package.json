@@ -55,7 +55,7 @@
     "build-ui": {
       "command": "pnpm --filter frontend build",
       "files": [
-        "packages/frontend/**/*.{js,ts}"
+        "packages/frontend/**/*.{js,ts,tsx,jsx,css,html}"
       ],
       "output": [
         "packages/frontend/dist/**"

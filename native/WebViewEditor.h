@@ -34,7 +34,7 @@ private:
 #elif JUCE_WINDOWS
     juce::HWNDComponent viewContainer;
 #elif JUCE_LINUX
-    juce::XEmbedComponent viewContainer;
+    std::unique_ptr<juce::XEmbedComponent> viewContainer;
 #else
  #error "Unsupported platform"
 #endif

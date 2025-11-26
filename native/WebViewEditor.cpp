@@ -68,18 +68,32 @@ WebViewEditor::WebViewEditor(juce::AudioProcessor* proc, juce::File const& asset
     // On Linux, getViewHandle() returns a GtkWidget*
     // We need to get the X11 window ID from it
     auto* gtkWidget = static_cast<GtkWidget*>(webView->getViewHandle());
+    
+    // Ensure the widget is realized before getting its window
+    if (!gtk_widget_get_realized(gtkWidget)) {
+        gtk_widget_realize(gtkWidget);
+    }
+    
     if (auto* gdkWindow = gtk_widget_get_window(gtkWidget)) {
         auto x11WindowId = gdk_x11_window_get_xid(gdkWindow);
-        // Reconstruct viewContainer with the correct window ID using placement new
-        viewContainer.~XEmbedComponent();
-        new (&viewContainer) juce::XEmbedComponent(x11WindowId, true, false);
+        // Initialize viewContainer with the correct window ID
+        viewContainer = std::make_unique<juce::XEmbedComponent>(x11WindowId, true, false);
+    } else {
+        jassertfalse; // Failed to get GDK window
+        // Fallback: create with default constructor
+        viewContainer = std::make_unique<juce::XEmbedComponent>();
     }
 #else
 #error "Unsupported platform"
 #endif
 
+#if JUCE_LINUX
+    addAndMakeVisible(*viewContainer);
+    viewContainer->setBounds({0, 0, 720, 440});
+#else
     addAndMakeVisible(viewContainer);
     viewContainer.setBounds({0, 0, 720, 440});
+#endif
 
     // Install message passing handlers
     webView->bind("__postNativeMessage__", [=](const choc::value::ValueView& args) -> choc::value::Value {
@@ -136,7 +150,13 @@ void WebViewEditor::paint (juce::Graphics& g)
 
 void WebViewEditor::resized()
 {
+#if JUCE_LINUX
+    if (viewContainer != nullptr) {
+        viewContainer->setBounds(getLocalBounds());
+    }
+#else
     viewContainer.setBounds(getLocalBounds());
+#endif
 }
 
 //==============================================================================
