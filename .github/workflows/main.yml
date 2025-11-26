@@ -12,7 +12,7 @@ on:
       - '.github/workflows/main.yml'
   push:
     branches:
-      - '**'
+      - main
     paths:
       - 'native/**/*.cpp'
       - 'native/**/*.h'
