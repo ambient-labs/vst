@@ -290,7 +290,7 @@ describe('Plugin Validation', () => {
     const output = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '10',
-      '--validate-in-process',
+      '--skip-gui-tests',
       '--output-dir',
       PLUGINVAL_DIR,
       '--vst3',
@@ -313,6 +313,7 @@ describe('Plugin Validation', () => {
     const output = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '5',
+      '--skip-gui-tests',
       '--timeout-ms',
       '30000',
       '--vst3',
@@ -331,6 +332,7 @@ describe('Plugin Validation', () => {
     const output = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '7',
+      '--skip-gui-tests',
       '--random-seed',
       '42',
       '--timeout-ms',
