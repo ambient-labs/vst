@@ -14,7 +14,8 @@
     "build-ui": "wireit",
     "build": "wireit",
     "preview": "pnpm --filter @srvb/frontend preview",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "setup-pluginval": "wireit",
+    "test:integration": "wireit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
@@ -82,6 +83,22 @@
       ],
       "output": [
         "native/build/scripted/SRVB_artefacts/**"
+      ]
+    },
+    "setup-pluginval": {
+      "command": "tsx scripts/pluginval/setup.ts",
+      "files": [
+        "scripts/pluginval/setup.ts",
+        "scripts/pluginval/config.json"
+      ],
+      "output": [
+        "node_modules/.cache/pluginval/**"
+      ]
+    },
+    "test:integration": {
+      "command": "vitest run --config vitest.integration.config.ts",
+      "dependencies": [
+        "setup-pluginval"
       ]
     }
   },
