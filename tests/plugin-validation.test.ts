@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync } from 'fs';
+import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';
 import https from 'https';
 
@@ -150,6 +150,18 @@ async function downloadPluginval(): Promise<string> {
 
     // Clean up zip file
     unlinkSync(zipPath);
+
+    // Verify extraction succeeded
+    if (!existsSync(pluginvalExe)) {
+      // List directory contents for debugging
+      console.error('Extraction failed. Directory contents:');
+      const files = readdirSync(PLUGINVAL_DIR);
+      console.error(files);
+      throw new Error(
+        `Pluginval binary not found at ${pluginvalExe} after extraction. ` +
+        `Found files: ${files.join(', ')}`
+      );
+    }
 
     // Make executable on Unix systems
     if (process.platform === 'darwin' || process.platform === 'linux') {
