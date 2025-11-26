@@ -41,7 +41,7 @@
   },
   "wireit": {
     "build": {
-      "command": "pnpm run build-native && pnpm run build-dsp && pnpm run build-ui"
+      "command": "pnpm run build-dsp && pnpm run build-ui && pnpm run build-native"
     },
     "build-dsp": {
       "command": "pnpm --filter dsp build",
@@ -63,9 +63,6 @@
     },
     "build-native": {
       "command": "zx scripts/build-native.mjs",
-      "dependencies": [
-        "build-ui"
-      ],
       "files": [
         "native/**/*.{cpp,h}",
         "native/CMakeLists.txt",
