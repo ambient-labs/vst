@@ -74,21 +74,24 @@ git checkout -b claude/14
 When working on multiple issues simultaneously, use git worktrees to maintain separate working directories:
 
 ```bash
-# Create a worktree for an issue
-git worktree add ../srvb-claude-14 -b claude/14
+# Create a worktree for an issue (placed in .worktrees directory)
+git worktree add .worktrees/claude-14 -b claude/14
 
 # List all worktrees
 git worktree list
 
 # Remove a worktree when done
-git worktree remove ../srvb-claude-14
+git worktree remove .worktrees/claude-14
 ```
+
+**Important:** All worktrees should be created in the `.worktrees/` directory to keep them organized and gitignored.
 
 Benefits:
 
 - Work on multiple branches simultaneously without constant switching
 - No need to stash/unstash changes
 - Each worktree has its own working directory
+- Organized in a single `.worktrees/` directory
 
 ### 4. Development Process
 

@@ -13,6 +13,7 @@ build
 dist
 *.local
 public/dsp.main.js
+**/public/dsp.main.js
 .wireit
 
 # Editor directories and files
