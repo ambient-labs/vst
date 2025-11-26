@@ -7,7 +7,9 @@ test_patterns = [
 exclude_patterns = [
   "node_modules/**",
   "dist/**",
+  "**/dist/**",
   "public/**",
+  "**/public/**",
   "native/build/**",
   "native/juce/**",
   "native/elementary/**",
@@ -16,7 +18,7 @@ exclude_patterns = [
   "pnpm-lock.yaml",
   "package-lock.json",
   ".wireit/**",
-  "packages/**/public/**"
+  ".worktrees/**"
 ]
 
 [[analyzers]]
