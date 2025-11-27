@@ -1,32 +1,25 @@
 #!/usr/bin/env tsx
 
-import { existsSync, mkdirSync, chmodSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  chmodSync,
+  createWriteStream,
+  unlinkSync,
+  statSync,
+} from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import { execFileSync } from 'child_process';
-import { readFile } from 'fs/promises';
+import { loadConfig, getPluginvalPath, type Config } from './helpers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '../..');
 
-interface PlatformConfig {
-  downloadUrl: string;
-  executable: string;
-  isAppBundle: boolean;
-}
-
-interface Config {
-  version: string;
-  cacheDir: string;
-  pluginName: string;
-  platforms: Record<string, PlatformConfig>;
-}
-
-// Load config
 const configPath = join(__dirname, 'config.json');
-const config: Config = JSON.parse(await readFile(configPath, 'utf-8'));
+const config: Config = await loadConfig(configPath);
 
 const PLUGINVAL_DIR = join(rootDir, config.cacheDir);
 const platform = process.platform as string;
@@ -44,7 +37,6 @@ async function downloadFile(url: string, dest: string): Promise<void> {
       if (response.statusCode === 302 || response.statusCode === 301) {
         const redirectUrl = response.headers.location;
         if (redirectUrl) {
-          // Validate redirect URL is HTTPS
           if (!redirectUrl.startsWith('https://')) {
             reject(new Error('Redirect must use HTTPS'));
             return;
@@ -65,7 +57,6 @@ async function downloadFile(url: string, dest: string): Promise<void> {
       fileStream.on('finish', () => {
         fileStream.close();
 
-        // Validate file was actually downloaded
         try {
           const stats = statSync(dest);
           if (stats.size === 0) {
@@ -87,69 +78,33 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 
 function extractZip(zipPath: string, destDir: string): void {
   if (platform === 'win32') {
-    execFileSync('powershell', [
-      '-command',
-      'Expand-Archive',
-      '-Path',
-      zipPath,
-      '-DestinationPath',
-      destDir,
-      '-Force'
-    ], { stdio: 'inherit' });
+    execFileSync(
+      'powershell',
+      [
+        '-command',
+        'Expand-Archive',
+        '-Path',
+        zipPath,
+        '-DestinationPath',
+        destDir,
+        '-Force',
+      ],
+      { stdio: 'inherit' }
+    );
   } else {
     execFileSync('unzip', ['-o', zipPath, '-d', destDir], { stdio: 'inherit' });
   }
 }
 
-function findBinary(): string {
-  const expectedPath = join(PLUGINVAL_DIR, platformConfig.executable);
-
-  // Check expected location first
-  if (existsSync(expectedPath)) {
-    return expectedPath;
-  }
-
-  console.log('Binary not at expected location. Searching...');
-  const files = readdirSync(PLUGINVAL_DIR, { withFileTypes: true });
-
-  for (const file of files) {
-    if (file.isDirectory()) {
-      // Check for macOS app bundle
-      if (platform === 'darwin' && file.name.endsWith('.app')) {
-        const appBinaryPath = join(PLUGINVAL_DIR, file.name, 'Contents', 'MacOS', platformConfig.executable);
-        if (existsSync(appBinaryPath)) {
-          console.log(`Found binary in app bundle: ${appBinaryPath}`);
-          return appBinaryPath;
-        }
-      }
-
-      // Check direct subdirectory
-      const subFiles = readdirSync(join(PLUGINVAL_DIR, file.name));
-      if (subFiles.includes(platformConfig.executable)) {
-        const foundPath = join(PLUGINVAL_DIR, file.name, platformConfig.executable);
-        console.log(`Found binary in subdirectory: ${foundPath}`);
-        return foundPath;
-      }
-    }
-  }
-
-  throw new Error(
-    `Pluginval binary '${platformConfig.executable}' not found after extraction. ` +
-    `Searched in: ${PLUGINVAL_DIR}`
-  );
-}
-
 async function setup(): Promise<string> {
   console.log(`Setting up pluginval ${config.version}...`);
 
-  // Create cache directory
   if (!existsSync(PLUGINVAL_DIR)) {
     mkdirSync(PLUGINVAL_DIR, { recursive: true });
   }
 
-  // Check if already set up
   try {
-    const binaryPath = findBinary();
+    const binaryPath = getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
     console.log(`✓ pluginval already installed at: ${binaryPath}`);
     return binaryPath;
   } catch {
@@ -167,13 +122,10 @@ async function setup(): Promise<string> {
     extractZip(zipPath, PLUGINVAL_DIR);
     console.log('✓ Extraction complete');
 
-    // Clean up zip file
     unlinkSync(zipPath);
 
-    // Find the binary
-    const binaryPath = findBinary();
+    const binaryPath = getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
 
-    // Make executable on Unix systems
     if (platform === 'darwin' || platform === 'linux') {
       chmodSync(binaryPath, 0o755);
       console.log('✓ Made binary executable');
@@ -182,7 +134,6 @@ async function setup(): Promise<string> {
     console.log(`✓ pluginval ${config.version} installed at: ${binaryPath}`);
     return binaryPath;
   } catch (error) {
-    // Clean up on error
     if (existsSync(zipPath)) {
       try {
         unlinkSync(zipPath);
@@ -196,8 +147,7 @@ async function setup(): Promise<string> {
   }
 }
 
-// Run setup
-setup().catch(error => {
+setup().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
