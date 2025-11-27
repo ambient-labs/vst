@@ -1,18 +1,11 @@
 #!/usr/bin/env tsx
 
-import {
-  existsSync,
-  mkdirSync,
-  chmodSync,
-  createWriteStream,
-  unlinkSync,
-  statSync,
-} from 'fs';
+import { existsSync, mkdirSync, chmodSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import https from 'https';
-import { execFileSync } from 'child_process';
 import { loadConfig, getPluginvalPath, type Config } from './helpers.js';
+import { downloadFile } from './download-file.js';
+import { extractZip } from './extract-zip.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,71 +23,6 @@ if (!config.platforms[platform]) {
 }
 
 const platformConfig = config.platforms[platform];
-
-async function downloadFile(url: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        const redirectUrl = response.headers.location;
-        if (redirectUrl) {
-          if (!redirectUrl.startsWith('https://')) {
-            reject(new Error('Redirect must use HTTPS'));
-            return;
-          }
-          downloadFile(redirectUrl, dest).then(resolve).catch(reject);
-          return;
-        }
-      }
-
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download: ${response.statusCode}`));
-        return;
-      }
-
-      const fileStream = createWriteStream(dest);
-      response.pipe(fileStream);
-
-      fileStream.on('finish', () => {
-        fileStream.close();
-
-        try {
-          const stats = statSync(dest);
-          if (stats.size === 0) {
-            reject(new Error('Downloaded file is empty'));
-            return;
-          }
-        } catch (err) {
-          reject(err);
-          return;
-        }
-
-        resolve();
-      });
-
-      fileStream.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-function extractZip(zipPath: string, destDir: string): void {
-  if (platform === 'win32') {
-    execFileSync(
-      'powershell',
-      [
-        '-command',
-        'Expand-Archive',
-        '-Path',
-        zipPath,
-        '-DestinationPath',
-        destDir,
-        '-Force',
-      ],
-      { stdio: 'inherit' }
-    );
-  } else {
-    execFileSync('unzip', ['-o', zipPath, '-d', destDir], { stdio: 'inherit' });
-  }
-}
 
 async function setup(): Promise<string> {
   console.log(`Setting up pluginval ${config.version}...`);
@@ -119,7 +47,7 @@ async function setup(): Promise<string> {
     console.log('✓ Download complete');
 
     console.log('Extracting...');
-    extractZip(zipPath, PLUGINVAL_DIR);
+    extractZip(zipPath, PLUGINVAL_DIR, platform);
     console.log('✓ Extraction complete');
 
     unlinkSync(zipPath);
