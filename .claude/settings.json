@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash\\(git commit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-commit-review.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash\\(git -C .* commit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-commit-review.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

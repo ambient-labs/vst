@@ -310,13 +310,47 @@ DeepSource analysis runs automatically on every commit via the pre-commit hook. 
 
 ## AI Code Generation Guidelines
 
+### Claude Code Pre-Commit Review Hook
+
+A pre-commit hook automatically reviews staged changes before committing. This runs when Claude Code executes `git commit` commands and catches issues before they enter the codebase.
+
+**What it checks (blocking issues):**
+- Hardcoded secrets/credentials (passwords, API keys, AWS keys)
+- `eval()` usage (code injection risk)
+- `innerHTML` assignment (XSS vulnerability)
+- `dangerouslySetInnerHTML` usage
+- Shell command injection patterns
+- SQL injection patterns
+
+**What it warns about (non-blocking):**
+- `console.log()` statements in non-test files
+- TODO/FIXME comments being added
+- ESLint disable comments
+- `@ts-ignore` usage
+- Large changes (500+ lines)
+
+**Behavior:**
+- **Blocks** commits with security vulnerabilities (exit code 2)
+- **Warns** about code quality issues but allows commit (exit code 0)
+- **Passes silently** when no issues found
+- Skips review for non-code files (config, docs, shell scripts)
+
+**To skip review (not recommended):**
+```bash
+SKIP_CODE_REVIEW=1 git commit -m "message"
+```
+
+**Configuration:**
+The hook is configured in `.claude/settings.json` and implemented in `.claude/hooks/pre-commit-review.sh`.
+
 ### Code Review for AI-Generated Code
 
 All AI-generated code goes through the same review process as human-written code:
 
-1. **Automated Checks**: CI runs linting, tests, and builds
-2. **Claude Code Review**: Automated review via GitHub Actions provides initial feedback
-3. **Human Review**: Final approval from a human maintainer is required
+1. **Local Pre-Commit Hook**: Catches security issues before committing
+2. **Automated Checks**: CI runs linting, tests, and builds
+3. **Claude Code Review**: Automated review via GitHub Actions provides initial feedback
+4. **Human Review**: Final approval from a human maintainer is required
 
 **Review Focus Areas:**
 - Security vulnerabilities (injection, XSS, unsafe operations)
