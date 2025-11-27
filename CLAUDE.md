@@ -208,26 +208,29 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
    gh pr checks <pr-number> --repo ambient-labs/vst
    ```
 
-2. **Expected checks:**
-   - `test` - Integration tests (runs on ubuntu-latest)
-   - `DeepSource: JavaScript` - Static analysis for JS/TS
-   - `DeepSource: C & C++` - Static analysis for native code
-   - `claude-review` - Automated code review
+2. **Required check:**
+   - `Check Commit Status` - **This is the only required check.** It's a PR Monitor that watches all other workflows and reports their combined status.
 
-3. **Review failures immediately:**
+3. **Monitored workflows (run conditionally based on changed files):**
+   - `native` - Native C++ build (only runs when `native/**` files change)
+   - `test` - Integration tests (only runs when `dsp/**`, `tests/**`, etc. change)
+   - `claude-review` - Automated code review (runs on code and docs changes)
+   - `DeepSource` - Static analysis (always runs via GitHub App, but excluded from PR Monitor)
+
+4. **How PR Monitor works:**
+   - Runs on every PR regardless of files changed
+   - Waits for other workflows to start, then polls their status
+   - Passes if all monitored checks pass OR if no other workflows run (e.g., docs-only PRs)
+   - Fails if any monitored workflow fails
+
+5. **Review failures immediately:**
    - Read error messages carefully
    - Use worktree for the branch if not already
    - Fix issues locally
    - Re-run quality checks
    - Push fixes and monitor again
 
-4. **Iterate until green:**
-   - Fix any failing tests
-   - Fix any linting issues (check DeepSource issue codes like JS-R1004)
-   - Fix any build failures
-   - Ensure all CI checks pass before considering the PR ready
-
-5. **Monitor for reviews:**
+6. **Monitor for reviews:**
    - Address feedback from human reviewers
    - Address feedback from automated reviews
    - Keep PR updated with requested changes
@@ -394,10 +397,12 @@ gh pr view            # View current PR
 
 ### CI/CD
 
-- Tests run on macOS (required for native builds)
-- Build verification checks artifact existence
-- Path filters skip builds for docs/config changes
-- Claude Code Review runs on PR open and manual trigger
+- **PR Monitor (`Check Commit Status`)** is the only required check for merging
+- PR Monitor aggregates results from all other workflows
+- Path filters skip expensive builds/tests for docs-only changes
+- Native builds run on macOS, Windows, and Ubuntu
+- Claude Code Review runs on code and documentation changes
+- DeepSource runs via GitHub App (excluded from PR Monitor)
 
 ### Communication
 
