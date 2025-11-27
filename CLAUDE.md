@@ -8,8 +8,21 @@ Claude Code runs in sandboxed mode by default. This affects how commands should 
 
 **Key constraints:**
 - Write access is limited to the project directory and `/tmp/claude/`
-- Network access is restricted to whitelisted hosts
+- Network access is restricted to whitelisted hosts (see below)
 - Some shell redirections may fail due to read-only temp directories
+- SSH connections to github.com are blocked - use `gh` CLI or disable sandbox for git push
+
+**Network allowlist:**
+The sandbox only allows connections to these hosts:
+- `github.com`, `api.github.com`, `raw.githubusercontent.com` - GitHub API access
+- `app.deepsource.com`, `api.deepsource.io`, `docs.deepsource.com` - DeepSource
+- `results-receiver.actions.githubusercontent.com` - GitHub Actions
+
+**Git push in sandbox mode:**
+SSH-based git push (`git push origin branch`) will fail because SSH to github.com is blocked.
+To push changes, either:
+1. Disable sandbox for git operations: use `dangerouslyDisableSandbox: true`
+2. Or ask the user to push manually
 
 **Best practices for sandbox mode:**
 
@@ -69,9 +82,11 @@ Example: For issue #14, create branch `claude/14`
 git checkout -b claude/14
 ```
 
-### 3. Use Git Worktrees (Preferred)
+### 3. Use Git Worktrees (REQUIRED)
 
-When working on multiple issues simultaneously, use git worktrees to maintain separate working directories:
+**IMPORTANT:** Always use git worktrees when working on issues. Multiple agents may run concurrently in this repository, and working directly in the main directory causes branch conflicts.
+
+When working on any issue, use git worktrees to maintain separate working directories:
 
 ```bash
 # Create a worktree for an issue (placed in .worktrees directory)
@@ -185,31 +200,39 @@ gh pr create --title "Brief description" --body "Detailed description" --base ma
 
 ### 8. Monitor PR Status
 
-After creating the PR:
+After creating or pushing to a PR, **monitor CI checks until all pass**:
 
 1. **Check CI status:**
 
    ```bash
-   gh pr checks
+   gh pr checks <pr-number> --repo ambient-labs/vst
    ```
 
-2. **Review failures:**
+2. **Expected checks:**
+   - `test` - Integration tests (runs on ubuntu-latest)
+   - `DeepSource: JavaScript` - Static analysis for JS/TS
+   - `DeepSource: C & C++` - Static analysis for native code
+   - `claude-review` - Automated code review
+
+3. **Review failures immediately:**
    - Read error messages carefully
-   - Pull down the branch if not already in a worktree
+   - Use worktree for the branch if not already
    - Fix issues locally
    - Re-run quality checks
-   - Push fixes
+   - Push fixes and monitor again
 
-3. **Iterate until green:**
+4. **Iterate until green:**
    - Fix any failing tests
-   - Fix any linting issues
+   - Fix any linting issues (check DeepSource issue codes like JS-R1004)
    - Fix any build failures
-   - Ensure all CI checks pass
+   - Ensure all CI checks pass before considering the PR ready
 
-4. **Monitor for reviews:**
+5. **Monitor for reviews:**
    - Address feedback from human reviewers
    - Address feedback from automated reviews
    - Keep PR updated with requested changes
+
+**Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
 
 ## Code Quality Guidelines
 
@@ -354,11 +377,12 @@ gh pr view            # View current PR
 
 ## Important Notes
 
-### Git Worktrees
+### Git Worktrees (REQUIRED)
 
-- Preferred over branch switching
-- Allows parallel work on multiple issues
-- Each worktree is independent
+- **REQUIRED** - not optional. Multiple agents run concurrently
+- Working in main directory causes branch conflicts between agents
+- Each worktree is independent and isolated
+- Always work in `.worktrees/claude-<issue>` directory
 - Clean up worktrees when done
 
 ### Dependencies
