@@ -46,7 +46,7 @@ function getPluginvalPath(): string {
   }
 
   throw new Error(
-    `Pluginval binary not found. Run 'pnpm run setup-pluginval' first.`
+    "Pluginval binary not found. Run 'pnpm run setup-pluginval' first."
   );
 }
 
