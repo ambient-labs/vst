@@ -46,6 +46,30 @@ To push changes, either:
    - These indicate sandbox restrictions, not code bugs
    - Retry with sandbox disabled only when necessary
 
+## Package Manager: pnpm Only
+
+**IMPORTANT:** This project uses `pnpm` exclusively. Never use `npm` or `yarn`.
+
+```bash
+# ✅ Correct
+pnpm install
+pnpm add <package>
+pnpm add -D <package>
+pnpm run <script>
+pnpm --filter <package> <command>
+
+# ❌ Wrong - will cause issues
+npm install
+npm run <script>
+yarn add <package>
+```
+
+**Why pnpm:**
+- Faster installs with hard-linked packages
+- Stricter dependency resolution prevents phantom dependencies
+- Better monorepo support with workspaces
+- Lock file (`pnpm-lock.yaml`) must be committed
+
 ## Workflow Overview
 
 All development work follows this structured process.
