@@ -3,12 +3,22 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    # Run on all meaningful changes - code, config, and docs
+    paths:
+      - 'src/**'
+      - 'dsp/**'
+      - 'native/**/*.cpp'
+      - 'native/**/*.h'
+      - 'native/CMakeLists.txt'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - 'vitest*.config.ts'
+      - '.github/workflows/**'
+      - '*.md'
+      - 'docs/**'
 
 jobs:
   claude-review:

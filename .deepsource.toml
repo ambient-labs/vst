@@ -19,7 +19,9 @@ exclude_patterns = [
   "package-lock.json",
   ".wireit/**",
   ".worktrees/**",
-  "scripts/**"
+  "scripts/**",
+  "*.md",
+  "docs/**"
 ]
 
 [[analyzers]]
