@@ -2,62 +2,10 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateObject, streamObject } from 'ai';
 import { z } from 'zod';
 
-// ============================================================================
-// Types and Schemas
-// ============================================================================
-
-/**
- * Schema for a DSP parameter that can be controlled in the UI
- */
-export const parameterSchema = z.object({
-  name: z.string().describe('Parameter name in camelCase'),
-  min: z.number().describe('Minimum value'),
-  max: z.number().describe('Maximum value'),
-  default: z.number().describe('Default value'),
-  unit: z.string().optional().describe('Unit of measurement (e.g., "Hz", "dB", "ms")'),
-});
-
-/**
- * Schema for generated DSP code response
- */
-export const dspCodeSchema = z.object({
-  code: z.string().describe('Complete ElementaryJS DSP code'),
-  explanation: z.string().describe('What the code does'),
-  parameters: z.array(parameterSchema).describe('Controllable parameters'),
-});
-
-export type Parameter = z.infer<typeof parameterSchema>;
-export type DSPCodeResponse = z.infer<typeof dspCodeSchema>;
-
-/**
- * LLM service configuration
- */
-export interface LLMServiceConfig {
-  apiKey: string;
-  model?: string;
-  maxTokens?: number;
-}
-
-/**
- * Error types for LLM service
- */
-export class LLMServiceError extends Error {
-  constructor(
-    message: string,
-    public readonly code: LLMErrorCode,
-    public readonly cause?: unknown
-  ) {
-    super(message);
-    this.name = 'LLMServiceError';
-  }
-}
-
-export enum LLMErrorCode {
-  INVALID_API_KEY = 'INVALID_API_KEY',
-  RATE_LIMIT = 'RATE_LIMIT',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  UNKNOWN = 'UNKNOWN',
-}
+import { dspCodeSchema } from './schemas.js';
+import { DSPCodeResponse, LLMServiceConfig, LLMErrorCode } from './types.js';
+import { LLMServiceError } from './llm-service-error.js';
+import { mapApiError } from './map-api-error.js';
 
 // ============================================================================
 // API Key Validation
@@ -85,75 +33,6 @@ export function isValidApiKeyFormat(apiKey: string): boolean {
   }
 
   return true;
-}
-
-// ============================================================================
-// Error Handling
-// ============================================================================
-
-/**
- * Maps API errors to our error types
- */
-function mapApiError(error: unknown): LLMServiceError {
-  if (error instanceof LLMServiceError) {
-    return error;
-  }
-
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const lowerMessage = errorMessage.toLowerCase();
-
-  // Extract status code from error object if present
-  let status: number | undefined;
-  if (error && typeof error === 'object' && 'status' in error) {
-    const statusValue = (error as Record<string, unknown>).status;
-    if (typeof statusValue === 'number') {
-      status = statusValue;
-    }
-  }
-
-  // Check for rate limiting
-  if (status === 429 || lowerMessage.includes('rate limit')) {
-    return new LLMServiceError(
-      'Rate limit exceeded. Please wait before making more requests.',
-      LLMErrorCode.RATE_LIMIT,
-      error
-    );
-  }
-
-  // Check for authentication errors
-  if (
-    status === 401 ||
-    status === 403 ||
-    lowerMessage.includes('invalid api key') ||
-    lowerMessage.includes('authentication')
-  ) {
-    return new LLMServiceError(
-      'Invalid API key. Please check your Anthropic API key.',
-      LLMErrorCode.INVALID_API_KEY,
-      error
-    );
-  }
-
-  // Check for network errors
-  if (
-    lowerMessage.includes('network') ||
-    lowerMessage.includes('econnrefused') ||
-    lowerMessage.includes('enotfound') ||
-    lowerMessage.includes('fetch failed')
-  ) {
-    return new LLMServiceError(
-      'Network error. Please check your internet connection.',
-      LLMErrorCode.NETWORK_ERROR,
-      error
-    );
-  }
-
-  // Default to unknown error
-  return new LLMServiceError(
-    `An unexpected error occurred: ${errorMessage}`,
-    LLMErrorCode.UNKNOWN,
-    error
-  );
 }
 
 // ============================================================================

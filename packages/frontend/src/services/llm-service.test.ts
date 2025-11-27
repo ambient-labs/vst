@@ -6,7 +6,7 @@ import {
   LLMServiceError,
   LLMErrorCode,
   type DSPCodeResponse,
-} from './llm-service.js';
+} from './index.js';
 
 // Mock the AI SDK modules
 vi.mock('ai', () => ({
