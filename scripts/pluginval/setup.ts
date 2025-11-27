@@ -3,7 +3,8 @@
 import { existsSync, mkdirSync, chmodSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { loadConfig, getPluginvalPath, type Config } from './helpers.js';
+import { loadConfig, type Config } from './load-config.js';
+import { getPluginvalPath } from './get-pluginval-path.js';
 import { downloadFile } from './download-file.js';
 import { extractZip } from './extract-zip.js';
 

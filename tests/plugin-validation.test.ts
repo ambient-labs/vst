@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import {
-  loadConfig,
-  getPluginvalPath,
-  getPluginPath,
-  runPluginval,
-} from '../scripts/pluginval/helpers.js';
+import { loadConfig } from '../scripts/pluginval/load-config.js';
+import { getPluginvalPath } from '../scripts/pluginval/get-pluginval-path.js';
+import { getPluginPath } from '../scripts/pluginval/get-plugin-path.js';
+import { runPluginval } from '../scripts/pluginval/run-pluginval.js';
 
 const configPath = join(process.cwd(), 'scripts', 'pluginval', 'config.json');
 const config = await loadConfig(configPath);
