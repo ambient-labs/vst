@@ -62,6 +62,29 @@ export default [
       },
     },
   },
+  {
+    files: ['scripts/**/*.ts', 'tests/**/*.ts', 'packages/**/*.test.ts'],
+    languageOptions: {
+      globals: {
+        // Node.js globals
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        // Browser globals used in mocks
+        Response: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['vitest*.config.ts'],
+    languageOptions: {
+      globals: {
+        // Node.js globals for vitest config
+        __dirname: 'readonly',
+      },
+    },
+  },
   prettier,
   {
     ignores: [

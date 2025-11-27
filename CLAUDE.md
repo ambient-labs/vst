@@ -449,6 +449,24 @@ ComponentName/
 
 ## Code Quality Guidelines
 
+### TypeScript/ESM Conventions
+
+**Always use `.js` extensions in imports:**
+
+When importing TypeScript files, always use the `.js` extension (not `.ts`). This is required for ESM compatibility.
+
+```typescript
+// ✅ Correct
+import { LLMService } from './llm-service.js';
+import { createStore } from '../stores/audio-store.js';
+
+// ❌ Wrong - will fail at runtime
+import { LLMService } from './llm-service';
+import { LLMService } from './llm-service.ts';
+```
+
+TypeScript compiles `.ts` files to `.js` files, and ESM requires explicit file extensions. The TypeScript compiler resolves `.js` imports to the corresponding `.ts` source files during compilation.
+
 ### Minimal Code Philosophy
 
 - Don't create new files unless absolutely necessary
@@ -459,10 +477,32 @@ ComponentName/
 
 ### Testing
 
-- Integration tests are in `tests/` directory
-- Run `pnpm run test:integration` before pushing
+**Test Organization:**
+- **Integration tests**: Located in `tests/` directory at project root
+- **Unit tests**: Colocated with source files as `*.test.ts` (e.g., `llm-service.test.ts` next to `llm-service.ts`)
+
+**Running Tests:**
+```bash
+# Integration tests (root level)
+pnpm run test:integration
+
+# Unit tests (in packages/frontend)
+pnpm --filter @srvb/frontend test
+
+# Unit tests with coverage
+pnpm --filter @srvb/frontend test:coverage
+```
+
+**Code Coverage Requirements:**
+- Target **95% coverage** for all new code
+- Coverage includes: statements, branches, functions, and lines
+- Run `test:coverage` to verify coverage meets thresholds
+
+**Test Guidelines:**
 - Test files should verify behavior, not implementation details
 - All tests must pass before pushing
+- Mock external dependencies (APIs, network calls)
+- Use descriptive test names that explain expected behavior
 
 **Tests Must Be Inline with Code Changes:**
 - When adding a feature, include tests in the same PR

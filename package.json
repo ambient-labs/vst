@@ -83,11 +83,13 @@
     "rimraf": "^5.0.0"
   },
   "devDependencies": {
+    "@ai-sdk/anthropic": "^2.0.50",
     "@elemaudio/core": "^4.0.1",
     "@elemaudio/offline-renderer": "^4.0.3",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
+    "ai": "^5.0.104",
     "concurrently": "^8.2.2",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
@@ -100,6 +102,7 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.9",
     "wireit": "^0.14.12",
+    "zod": "^4.1.13",
     "zx": "^7.2.3"
   }
 }
