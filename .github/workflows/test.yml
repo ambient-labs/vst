@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'dsp/**'
+      - 'packages/dsp/**'
+      - 'packages/frontend/**'
       - 'tests/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -14,7 +15,8 @@ on:
     branches:
       - main
     paths:
-      - 'dsp/**'
+      - 'packages/dsp/**'
+      - 'packages/frontend/**'
       - 'tests/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -22,7 +24,74 @@ on:
       - '.github/workflows/test.yml'
 
 jobs:
-  test:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      dsp: ${{ steps.filter.outputs.dsp }}
+      integration: ${{ steps.filter.outputs.integration }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'packages/frontend/**'
+            dsp:
+              - 'packages/dsp/**'
+            integration:
+              - 'packages/dsp/**'
+              - 'tests/**'
+              - 'vitest.integration.config.ts'
+
+  unit-frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run frontend unit tests
+        run: pnpm --filter frontend test:unit
+
+  unit-dsp:
+    needs: changes
+    if: ${{ needs.changes.outputs.dsp == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run DSP unit tests
+        run: pnpm --filter dsp test:unit
+
+  integration:
+    needs: changes
+    if: ${{ needs.changes.outputs.integration == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
