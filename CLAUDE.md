@@ -15,7 +15,6 @@ Claude Code runs in sandboxed mode by default. This affects how commands should 
 **Network allowlist:**
 The sandbox only allows connections to these hosts:
 - `github.com`, `api.github.com`, `raw.githubusercontent.com` - GitHub API access
-- `app.deepsource.com`, `api.deepsource.io`, `docs.deepsource.com` - DeepSource
 - `results-receiver.actions.githubusercontent.com` - GitHub Actions
 
 **Git push in sandbox mode:**
@@ -214,8 +213,7 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 3. **Monitored workflows (run conditionally based on changed files):**
    - `native` - Native C++ build (only runs when `native/**` files change)
    - `test` - Integration tests (only runs when `dsp/**`, `tests/**`, etc. change)
-   - `claude-review` - Automated code review (runs on code and docs changes)
-   - `DeepSource` - Static analysis (always runs via GitHub App, but excluded from PR Monitor)
+   - `semgrep` - Security analysis (runs on code changes)
 
 4. **How PR Monitor works:**
    - Runs on every PR regardless of files changed
@@ -236,6 +234,178 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
    - Keep PR updated with requested changes
 
 **Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
+
+## Code Standards
+
+This section documents the coding patterns and conventions used throughout this codebase. Follow these standards to maintain consistency.
+
+### Language
+
+- **Always use TypeScript** for new code (`.ts`, `.tsx` files)
+- Existing JavaScript files (`.js`, `.jsx`) may remain, but new features should be TypeScript
+- Enable strict mode in `tsconfig.json`
+
+### Import Conventions
+
+**File extensions in imports - ALWAYS use `.js` for local imports:**
+- **TypeScript files (`.ts`, `.tsx`)**: Use `.js` extension for local imports (TypeScript resolves these)
+  ```typescript
+  // In packages/frontend/src/services/llm-service.ts
+  import { LLMServiceError } from './llm-service-error.js';
+  import type { DSPCodeResponse } from './types.js';
+
+  // In tests/*.ts files
+  import srvb from '../packages/dsp/srvb.js';
+  ```
+- **JSX files importing other JSX**: Include the `.jsx` extension for local imports
+  ```javascript
+  // In packages/frontend/src/*.jsx files
+  import Interface from './Interface.jsx';
+  import Knob from './Knob.jsx';
+  ```
+- **JS files importing local JS**: Always include the `.js` extension
+  ```javascript
+  // In packages/dsp/*.js files
+  import { RefMap } from './RefMap.js';
+  import srvb from './srvb.js';
+  ```
+- **Node.js built-ins**: Use the `node:` protocol prefix, prefer async versions
+  ```javascript
+  import { exec } from 'node:child_process';
+  import { readFile } from 'node:fs/promises';
+  ```
+- **External packages**: Never include extensions
+  ```javascript
+  import { el } from '@elemaudio/core';
+  import invariant from 'invariant';
+  ```
+
+### Package Manager
+
+- **Always use `pnpm`**, never `npm` or `yarn`
+  ```bash
+  pnpm install           # Install dependencies
+  pnpm add <package>     # Add a dependency
+  pnpm add -D <package>  # Add a dev dependency
+  pnpm run <script>      # Run a script
+  ```
+
+### Export Patterns
+
+- **Prefer named exports** over default exports for better refactoring support
+  ```typescript
+  export function processAudio(input: AudioBuffer): AudioBuffer { ... }
+  export class AudioService { ... }
+  export const SAMPLE_RATE = 44100;
+  ```
+- **Exception**: React components may use default exports when required by framework conventions
+
+### Test File Conventions
+
+**Test locations:**
+- **Unit tests**: Colocate next to the file they test (e.g., `services/llm-service.test.ts` for `services/llm-service.ts`)
+- **Integration tests**: Place in `tests/` directory at the project root
+
+**Test commands:**
+- `pnpm run test:unit` - Run unit tests only (`src/**/*.test.ts`)
+- `pnpm run test:integration` - Run integration tests only (`tests/**/*.test.ts`)
+
+**Test structure:**
+- Use vitest's `describe`/`it`/`expect` pattern
+- Extract magic numbers into named constants at file top
+  ```typescript
+  const SAMPLE_RATE = 44100;
+  const BLOCK_SIZE = 512;
+  const SMOOTHING_SETTLE_BLOCKS = 20;
+  ```
+- Use behavior-focused test descriptions
+  ```typescript
+  it('should produce complete silence at 0% volume', async () => { ... });
+  ```
+
+**Mocking with vitest:**
+- Import both the module (for use in tests) and a type-only namespace (for type assertion in mocks):
+  ```typescript
+  import { myFunction } from './my-module.js';
+  import type * as _MyModule from './my-module.js';
+
+  vi.mock('./my-module.js', async () => {
+    const actual = await vi.importActual('./my-module.js') as typeof _MyModule;
+    return {
+      ...actual,
+      myFunction: vi.fn().mockImplementation(() => 'mocked'),
+    };
+  });
+
+  // In tests, use vi.mocked() to access mock functions
+  vi.mocked(myFunction).mockReturnValue('test value');
+  ```
+- This pattern preserves types from the actual module while allowing selective mocking
+
+**Coverage requirements:**
+- Target >95% code coverage for new code
+- Every exported function should have unit tests
+
+### React Component Patterns
+
+- **Functional components only**: No class components
+- **Hooks**: Import individual hooks from React
+  ```javascript
+  import { useState, useEffect, useRef, memo } from 'react';
+  ```
+- **Memoization**: Use `memo()` for components that benefit from it
+- **Props destructuring**: Destructure props in function signature or body
+  ```javascript
+  const {className, meterColor, knobColor, thumbColor, ...other} = props;
+  ```
+
+### Runtime Type Checking
+
+- **Use `invariant` for assertions**: Prefer invariant over throwing errors manually
+  ```javascript
+  import invariant from 'invariant';
+  invariant(typeof props === 'object', 'Unexpected props object');
+  ```
+
+### File Organization
+
+**General principles:**
+- One component/module per file
+- Break large files into smaller focused modules
+- Related utilities can be co-located with their main usage
+
+**Complex React components** should use a directory structure:
+```
+ComponentName/
+├── index.tsx      # Main component logic
+├── types.ts       # TypeScript interfaces and types
+└── config.ts      # Constants, theme config, default values
+```
+
+**Large text content** (system prompts, templates):
+- Store in `.txt` files rather than inline strings
+- Import and use as needed
+
+**Package structure**: Follow the existing monorepo structure in `packages/`
+
+### Naming Conventions
+
+- **Files**: PascalCase for React components (`Knob.jsx`), camelCase for utilities (`srvb.js`)
+- **Components**: PascalCase (`Interface`, `Knob`, `DragBehavior`)
+- **Functions**: camelCase (`requestParamValueUpdate`, `shouldRender`)
+- **Constants**: SCREAMING_SNAKE_CASE for true constants (`SAMPLE_RATE`, `BLOCK_SIZE`)
+- **Variables**: camelCase
+
+### TypeScript Patterns
+
+- **Vitest typing**: Tests use vitest types, not Jest
+  ```typescript
+  import { describe, it, expect } from 'vitest';
+  ```
+- **Unused variables**: Prefix with underscore to satisfy linter
+  ```typescript
+  const [_unused, setter] = result;
+  ```
 
 ## Code Quality Guidelines
 
@@ -274,25 +444,21 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 - Maintain consistent code style
 - Run `pnpm run lint` before pushing
 
-### DeepSource (Static Analysis)
+### Semgrep (Static Analysis)
 
-DeepSource runs automated code analysis on PRs and as a pre-commit hook.
+Semgrep runs automated security analysis on PRs via GitHub Actions.
 
-**Setup (one-time):**
-
-```bash
-pnpm run deepsource:install
-```
-
-**Run manually:**
+**Run locally (requires Docker):**
 
 ```bash
-pnpm run deepsource
+pnpm run semgrep
 ```
 
-**Pre-commit hook:**
+This uses the Semgrep Docker image to scan the codebase with the `auto` config, which includes 1000+ security rules covering OWASP vulnerabilities.
 
-DeepSource analysis runs automatically on every commit via the pre-commit hook. Ensure `DEEPSOURCE_DSN` is set in your `.env` file.
+**CI Integration:**
+
+Semgrep runs automatically on PRs that modify code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h`).
 
 ### Documentation
 
@@ -310,12 +476,45 @@ DeepSource analysis runs automatically on every commit via the pre-commit hook. 
 
 ## AI Code Generation Guidelines
 
+### Claude Code Pre-Commit Review Hook
+
+A pre-commit hook automatically reviews staged changes before committing. This runs when Claude Code executes `git commit` commands and catches issues before they enter the codebase.
+
+**What it checks (blocking issues):**
+- Hardcoded secrets/credentials (passwords, API keys, AWS keys)
+- `eval()` usage (code injection risk)
+- `innerHTML` assignment (XSS vulnerability)
+- `dangerouslySetInnerHTML` usage
+- Shell command injection patterns
+- SQL injection patterns
+
+**What it warns about (non-blocking):**
+- `console.log()` statements in non-test files
+- TODO/FIXME comments being added
+- ESLint disable comments
+- `@ts-ignore` usage
+- Large changes (500+ lines)
+
+**Behavior:**
+- **Blocks** commits with security vulnerabilities (exit code 2)
+- **Warns** about code quality issues but allows commit (exit code 0)
+- **Passes silently** when no issues found
+- Skips review for non-code files (config, docs, shell scripts)
+
+**To skip review (not recommended):**
+```bash
+SKIP_CODE_REVIEW=1 git commit -m "message"
+```
+
+**Configuration:**
+The hook is configured in `.claude/settings.json` and implemented in `.claude/hooks/pre-commit-review.sh`.
+
 ### Code Review for AI-Generated Code
 
 All AI-generated code goes through the same review process as human-written code:
 
-1. **Automated Checks**: CI runs linting, tests, and builds
-2. **Claude Code Review**: Automated review via GitHub Actions provides initial feedback
+1. **Local Pre-Commit Hook**: Catches security issues before committing
+2. **Automated Checks**: CI runs linting, tests, builds, and security analysis (Semgrep)
 3. **Human Review**: Final approval from a human maintainer is required
 
 **Review Focus Areas:**
@@ -401,8 +600,7 @@ gh pr view            # View current PR
 - PR Monitor aggregates results from all other workflows
 - Path filters skip expensive builds/tests for docs-only changes
 - Native builds run on macOS, Windows, and Ubuntu
-- Claude Code Review runs on code and documentation changes
-- DeepSource runs via GitHub App (excluded from PR Monitor)
+- Semgrep runs security analysis on code changes
 
 ### Communication
 

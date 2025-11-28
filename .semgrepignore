@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+**/dist/
+public/
+**/public/
+native/build/
+
+# Third-party code (submodules)
+native/juce/
+native/elementary/
+native/choc/
+
+# Generated files
+.wireit/
+.worktrees/
+pnpm-lock.yaml
+package-lock.json
+
+# Config/metadata
+.devcontainer/
+
+# Tests (scanned separately with test rules if needed)
+tests/

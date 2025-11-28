@@ -23,29 +23,12 @@ jobs:
             const EXCLUDED_JOBS = [
               // Important: exclude this job itself
               'Check Commit Status',
-              // DeepSource runs via GitHub App, not workflows
+              // DeepSource runs via GitHub App, not workflows (to be removed once GitHub App is uninstalled)
               'DeepSource: JavaScript',
               'DeepSource: C & C++',
             ];
 
             const { owner, repo } = context.repo;
-            const pull_number = context.payload.pull_request.number;
-
-            // Check if workflow files were changed in this PR
-            // If so, claude-review will fail due to security validation (expected)
-            const filesResponse = await github.rest.pulls.listFiles({
-              owner,
-              repo,
-              pull_number,
-              per_page: 100
-            });
-            const workflowFilesChanged = filesResponse.data.some(
-              f => f.filename.startsWith('.github/workflows/')
-            );
-            if (workflowFilesChanged) {
-              console.log('Workflow files changed - claude-review failure is expected (security validation)');
-              EXCLUDED_JOBS.push('claude-review');
-            }
 
             console.log(`Sleeping ${Math.round(PRE_SLEEP / 1000)}s to give other workflows a chance to start`);
             await sleep(PRE_SLEEP);
