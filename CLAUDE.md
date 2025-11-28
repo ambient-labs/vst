@@ -235,6 +235,178 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 
 **Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
 
+## Code Standards
+
+This section documents the coding patterns and conventions used throughout this codebase. Follow these standards to maintain consistency.
+
+### Language
+
+- **Always use TypeScript** for new code (`.ts`, `.tsx` files)
+- Existing JavaScript files (`.js`, `.jsx`) may remain, but new features should be TypeScript
+- Enable strict mode in `tsconfig.json`
+
+### Import Conventions
+
+**File extensions in imports - ALWAYS use `.js` for local imports:**
+- **TypeScript files (`.ts`, `.tsx`)**: Use `.js` extension for local imports (TypeScript resolves these)
+  ```typescript
+  // In packages/frontend/src/services/llm-service.ts
+  import { LLMServiceError } from './llm-service-error.js';
+  import type { DSPCodeResponse } from './types.js';
+
+  // In tests/*.ts files
+  import srvb from '../packages/dsp/srvb.js';
+  ```
+- **JSX files importing other JSX**: Include the `.jsx` extension for local imports
+  ```javascript
+  // In packages/frontend/src/*.jsx files
+  import Interface from './Interface.jsx';
+  import Knob from './Knob.jsx';
+  ```
+- **JS files importing local JS**: Always include the `.js` extension
+  ```javascript
+  // In packages/dsp/*.js files
+  import { RefMap } from './RefMap.js';
+  import srvb from './srvb.js';
+  ```
+- **Node.js built-ins**: Use the `node:` protocol prefix, prefer async versions
+  ```javascript
+  import { exec } from 'node:child_process';
+  import { readFile } from 'node:fs/promises';
+  ```
+- **External packages**: Never include extensions
+  ```javascript
+  import { el } from '@elemaudio/core';
+  import invariant from 'invariant';
+  ```
+
+### Package Manager
+
+- **Always use `pnpm`**, never `npm` or `yarn`
+  ```bash
+  pnpm install           # Install dependencies
+  pnpm add <package>     # Add a dependency
+  pnpm add -D <package>  # Add a dev dependency
+  pnpm run <script>      # Run a script
+  ```
+
+### Export Patterns
+
+- **Prefer named exports** over default exports for better refactoring support
+  ```typescript
+  export function processAudio(input: AudioBuffer): AudioBuffer { ... }
+  export class AudioService { ... }
+  export const SAMPLE_RATE = 44100;
+  ```
+- **Exception**: React components may use default exports when required by framework conventions
+
+### Test File Conventions
+
+**Test locations:**
+- **Unit tests**: Colocate next to the file they test (e.g., `services/llm-service.test.ts` for `services/llm-service.ts`)
+- **Integration tests**: Place in `tests/` directory at the project root
+
+**Test commands:**
+- `pnpm run test:unit` - Run unit tests only (`src/**/*.test.ts`)
+- `pnpm run test:integration` - Run integration tests only (`tests/**/*.test.ts`)
+
+**Test structure:**
+- Use vitest's `describe`/`it`/`expect` pattern
+- Extract magic numbers into named constants at file top
+  ```typescript
+  const SAMPLE_RATE = 44100;
+  const BLOCK_SIZE = 512;
+  const SMOOTHING_SETTLE_BLOCKS = 20;
+  ```
+- Use behavior-focused test descriptions
+  ```typescript
+  it('should produce complete silence at 0% volume', async () => { ... });
+  ```
+
+**Mocking with vitest:**
+- Import both the module (for use in tests) and a type-only namespace (for type assertion in mocks):
+  ```typescript
+  import { myFunction } from './my-module.js';
+  import type * as _MyModule from './my-module.js';
+
+  vi.mock('./my-module.js', async () => {
+    const actual = await vi.importActual('./my-module.js') as typeof _MyModule;
+    return {
+      ...actual,
+      myFunction: vi.fn().mockImplementation(() => 'mocked'),
+    };
+  });
+
+  // In tests, use vi.mocked() to access mock functions
+  vi.mocked(myFunction).mockReturnValue('test value');
+  ```
+- This pattern preserves types from the actual module while allowing selective mocking
+
+**Coverage requirements:**
+- Target >95% code coverage for new code
+- Every exported function should have unit tests
+
+### React Component Patterns
+
+- **Functional components only**: No class components
+- **Hooks**: Import individual hooks from React
+  ```javascript
+  import { useState, useEffect, useRef, memo } from 'react';
+  ```
+- **Memoization**: Use `memo()` for components that benefit from it
+- **Props destructuring**: Destructure props in function signature or body
+  ```javascript
+  const {className, meterColor, knobColor, thumbColor, ...other} = props;
+  ```
+
+### Runtime Type Checking
+
+- **Use `invariant` for assertions**: Prefer invariant over throwing errors manually
+  ```javascript
+  import invariant from 'invariant';
+  invariant(typeof props === 'object', 'Unexpected props object');
+  ```
+
+### File Organization
+
+**General principles:**
+- One component/module per file
+- Break large files into smaller focused modules
+- Related utilities can be co-located with their main usage
+
+**Complex React components** should use a directory structure:
+```
+ComponentName/
+├── index.tsx      # Main component logic
+├── types.ts       # TypeScript interfaces and types
+└── config.ts      # Constants, theme config, default values
+```
+
+**Large text content** (system prompts, templates):
+- Store in `.txt` files rather than inline strings
+- Import and use as needed
+
+**Package structure**: Follow the existing monorepo structure in `packages/`
+
+### Naming Conventions
+
+- **Files**: PascalCase for React components (`Knob.jsx`), camelCase for utilities (`srvb.js`)
+- **Components**: PascalCase (`Interface`, `Knob`, `DragBehavior`)
+- **Functions**: camelCase (`requestParamValueUpdate`, `shouldRender`)
+- **Constants**: SCREAMING_SNAKE_CASE for true constants (`SAMPLE_RATE`, `BLOCK_SIZE`)
+- **Variables**: camelCase
+
+### TypeScript Patterns
+
+- **Vitest typing**: Tests use vitest types, not Jest
+  ```typescript
+  import { describe, it, expect } from 'vitest';
+  ```
+- **Unused variables**: Prefix with underscore to satisfy linter
+  ```typescript
+  const [_unused, setter] = result;
+  ```
+
 ## Code Quality Guidelines
 
 ### Minimal Code Philosophy

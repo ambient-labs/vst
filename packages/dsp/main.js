@@ -1,6 +1,6 @@
 import { Renderer, el } from '@elemaudio/core';
-import { RefMap } from './RefMap';
-import srvb from './srvb';
+import { RefMap } from './RefMap.js';
+import srvb from './srvb.js';
 
 // This project demonstrates writing a small FDN reverb effect in Elementary.
 //
