@@ -1,11 +1,12 @@
 {
-  "name": "@srvb/dsp",
+  "name": "dsp",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "esbuild main.js --watch --bundle --outfile=../frontend/public/dsp.main.js",
-    "build": "esbuild main.js --bundle --outfile=../frontend/public/dsp.main.js"
+    "build": "esbuild main.js --bundle --outfile=../frontend/public/dsp.main.js",
+    "test:unit": "vitest run --config vitest.unit.config.ts"
   },
   "dependencies": {
     "@elemaudio/core": "^4.0.1"
