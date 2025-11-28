@@ -78,7 +78,6 @@ export function ChatInterface({ onApplyCode, hasApiKey, onOpenSettings }: ChatIn
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -235,7 +234,6 @@ export default function process(props, left, right) {
         )}
         <div className="flex gap-2">
           <textarea
-            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
