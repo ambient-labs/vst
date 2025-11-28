@@ -16,7 +16,9 @@ interface ChatInterfaceProps {
 }
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 9);
+  const array = new Uint32Array(2);
+  crypto.getRandomValues(array);
+  return Array.from(array, (n) => n.toString(36)).join('').substring(0, 9);
 }
 
 function UserMessage({ content }: { content: string }) {

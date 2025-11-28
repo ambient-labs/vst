@@ -41,6 +41,8 @@ export default [
         HTMLDivElement: 'readonly',
         HTMLTextAreaElement: 'readonly',
         React: 'readonly',
+        crypto: 'readonly',
+        Uint32Array: 'readonly',
       },
     },
   },
