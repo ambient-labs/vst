@@ -15,7 +15,6 @@ Claude Code runs in sandboxed mode by default. This affects how commands should 
 **Network allowlist:**
 The sandbox only allows connections to these hosts:
 - `github.com`, `api.github.com`, `raw.githubusercontent.com` - GitHub API access
-- `app.deepsource.com`, `api.deepsource.io`, `docs.deepsource.com` - DeepSource
 - `results-receiver.actions.githubusercontent.com` - GitHub Actions
 
 **Git push in sandbox mode:**
@@ -214,8 +213,7 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 3. **Monitored workflows (run conditionally based on changed files):**
    - `native` - Native C++ build (only runs when `native/**` files change)
    - `test` - Integration tests (only runs when `dsp/**`, `tests/**`, etc. change)
-   - `claude-review` - Automated code review (runs on code and docs changes)
-   - `DeepSource` - Static analysis (always runs via GitHub App, but excluded from PR Monitor)
+   - `semgrep` - Security analysis (runs on code changes)
 
 4. **How PR Monitor works:**
    - Runs on every PR regardless of files changed
@@ -274,25 +272,21 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 - Maintain consistent code style
 - Run `pnpm run lint` before pushing
 
-### DeepSource (Static Analysis)
+### Semgrep (Static Analysis)
 
-DeepSource runs automated code analysis on PRs and as a pre-commit hook.
+Semgrep runs automated security analysis on PRs via GitHub Actions.
 
-**Setup (one-time):**
-
-```bash
-pnpm run deepsource:install
-```
-
-**Run manually:**
+**Run locally (requires Docker):**
 
 ```bash
-pnpm run deepsource
+pnpm run semgrep
 ```
 
-**Pre-commit hook:**
+This uses the Semgrep Docker image to scan the codebase with the `auto` config, which includes 1000+ security rules covering OWASP vulnerabilities.
 
-DeepSource analysis runs automatically on every commit via the pre-commit hook. Ensure `DEEPSOURCE_DSN` is set in your `.env` file.
+**CI Integration:**
+
+Semgrep runs automatically on PRs that modify code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h`).
 
 ### Documentation
 
@@ -348,9 +342,8 @@ The hook is configured in `.claude/settings.json` and implemented in `.claude/ho
 All AI-generated code goes through the same review process as human-written code:
 
 1. **Local Pre-Commit Hook**: Catches security issues before committing
-2. **Automated Checks**: CI runs linting, tests, and builds
-3. **Claude Code Review**: Automated review via GitHub Actions provides initial feedback
-4. **Human Review**: Final approval from a human maintainer is required
+2. **Automated Checks**: CI runs linting, tests, builds, and security analysis (Semgrep)
+3. **Human Review**: Final approval from a human maintainer is required
 
 **Review Focus Areas:**
 - Security vulnerabilities (injection, XSS, unsafe operations)
@@ -435,8 +428,7 @@ gh pr view            # View current PR
 - PR Monitor aggregates results from all other workflows
 - Path filters skip expensive builds/tests for docs-only changes
 - Native builds run on macOS, Windows, and Ubuntu
-- Claude Code Review runs on code and documentation changes
-- DeepSource runs via GitHub App (excluded from PR Monitor)
+- Semgrep runs security analysis on code changes
 
 ### Communication
 
