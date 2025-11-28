@@ -324,18 +324,19 @@ This section documents the coding patterns and conventions used throughout this 
   ```
 
 **Mocking with vitest:**
-- Type mocked imports properly with `vi.mock()`
+- Import the module as a namespace for type information, then use `vi.importActual` inside `vi.mock` with type assertion:
   ```typescript
-  vi.mock('./dependency.js', () => ({
-    someFunction: vi.fn(),
-  }));
-  ```
-- Use `as typeof` for type assertions when importing actual modules in mocks
-  ```typescript
-  import * as _ActualModule from './module.js';
+  import * as _MyModule from './my-module.js';
 
-  const actual = await vi.importActual('./module.js') as typeof _ActualModule;
+  vi.mock('./my-module.js', async () => {
+    const actual = await vi.importActual('./my-module.js') as typeof _MyModule;
+    return {
+      ...actual,
+      myFunction: vi.fn().mockImplementation(() => 'mocked'),
+    };
+  });
   ```
+- This pattern preserves types from the actual module while allowing selective mocking
 
 **Coverage requirements:**
 - Target >95% code coverage for new code
