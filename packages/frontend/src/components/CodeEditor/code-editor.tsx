@@ -4,8 +4,6 @@ import { javascript } from '@codemirror/lang-javascript';
 import { darkTheme, basicSetupConfig } from './config.js';
 import type { CodeEditorProps } from './types.ts';
 
-export type { CodeEditorProps } from './types.ts';
-
 export function CodeEditor({
   code,
   onChange,
