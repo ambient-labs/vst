@@ -17,7 +17,10 @@ export function getStoredApiKey(): string | null {
 const VALID_PROVIDERS: LLMProvider[] = ['anthropic'];
 
 function isValidProvider(value: string | null): value is LLMProvider {
-  return value !== null && VALID_PROVIDERS.includes(value as LLMProvider);
+  if (value === null) {
+    return false;
+  }
+  return (VALID_PROVIDERS as readonly string[]).includes(value);
 }
 
 export function getStoredProvider(): LLMProvider {
@@ -125,7 +128,12 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
             </label>
             <select
               value={provider}
-              onChange={(e) => setProvider(e.target.value as LLMProvider)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (isValidProvider(value)) {
+                  setProvider(value);
+                }
+              }}
               className="w-full bg-slate-700 text-slate-100 rounded-md px-3 py-2 border border-slate-600 focus:border-pink-500 focus:outline-none"
             >
               <option value="anthropic">Anthropic (Claude)</option>
