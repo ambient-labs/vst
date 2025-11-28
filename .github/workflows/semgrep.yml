@@ -1,0 +1,38 @@
+name: Semgrep
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '.github/workflows/semgrep.yml'
+      - '.semgrepignore'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '.github/workflows/semgrep.yml'
+      - '.semgrepignore'
+
+jobs:
+  semgrep:
+    name: semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --error
