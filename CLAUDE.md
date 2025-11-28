@@ -324,9 +324,9 @@ This section documents the coding patterns and conventions used throughout this 
   ```
 
 **Mocking with vitest:**
-- Import the module as a namespace for type information, then use `vi.importActual` inside `vi.mock` with type assertion:
+- Import the module as a type-only namespace, then use `vi.importActual` inside `vi.mock` with type assertion:
   ```typescript
-  import * as _MyModule from './my-module.js';
+  import type * as _MyModule from './my-module.js';
 
   vi.mock('./my-module.js', async () => {
     const actual = await vi.importActual('./my-module.js') as typeof _MyModule;
