@@ -1,5 +1,7 @@
 # SRVB
 
+[![codecov](https://codecov.io/gh/ambient-labs/vst/graph/badge.svg)](https://codecov.io/gh/ambient-labs/vst)
+
 SRVB is a small digital reverb audio plugin (VST3/AU) for MacOS and Windows.
 
 This project demonstrates one way to write an audio plugin using JavaScript and

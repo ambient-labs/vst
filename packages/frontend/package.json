@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:unit": "vitest run --config vitest.unit.config.ts"
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:unit:coverage": "vitest run --config vitest.unit.config.ts --coverage"
   },
   "dependencies": {
     "@elemaudio/core": "^4.0.1",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.0.37",
+    "@vitest/coverage-v8": "^4.0.9",
     "@types/react-dom": "^18.0.11",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.14",

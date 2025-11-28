@@ -64,8 +64,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run frontend unit tests
-        run: pnpm --filter frontend test:unit
+      - name: Run frontend unit tests with coverage
+        run: pnpm --filter frontend test:unit:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
 
   unit-dsp:
     needs: changes
@@ -86,8 +94,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run DSP unit tests
-        run: pnpm --filter dsp test:unit
+      - name: Run DSP unit tests with coverage
+        run: pnpm --filter dsp test:unit:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/dsp/coverage/lcov.info
+          flags: dsp
+          fail_ci_if_error: false
 
   integration:
     needs: changes
