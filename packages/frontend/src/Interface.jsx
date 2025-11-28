@@ -36,7 +36,7 @@ export default function Interface(props) {
   };
 
   const params = manifest.parameters.map(({paramId, name}) => {
-    const currentValue = props[paramId] || 0;
+    const currentValue = props[paramId] ?? 0;
 
     return {
       paramId,
