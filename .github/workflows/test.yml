@@ -37,11 +37,15 @@ jobs:
         with:
           filters: |
             frontend:
-              - 'packages/frontend/**'
+              - 'packages/frontend/src/**'
+              - 'packages/frontend/vitest.unit.config.ts'
             dsp:
-              - 'packages/dsp/**'
+              - 'packages/dsp/**/*.js'
+              - 'packages/dsp/**/*.ts'
+              - 'packages/dsp/vitest.unit.config.ts'
             integration:
-              - 'packages/dsp/**'
+              - 'packages/dsp/**/*.js'
+              - 'packages/dsp/**/*.ts'
               - 'tests/**'
               - 'vitest.integration.config.ts'
 
