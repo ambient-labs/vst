@@ -48,7 +48,7 @@ describe('Plugin Validation', () => {
 
     expect(result.output).toBeDefined();
     expect(result.output.length).toBeGreaterThan(0);
-  }, 180000);
+  });
 
   it('should load and unload without crashes', () => {
     const result = runPluginval(pluginvalPath, pluginPath, [
@@ -68,7 +68,7 @@ describe('Plugin Validation', () => {
 
     expect(result.output).toBeDefined();
     expect(result.output.length).toBeGreaterThan(0);
-  }, 90000);
+  });
 
   it('should handle parameter changes correctly', () => {
     const result = runPluginval(pluginvalPath, pluginPath, [
@@ -90,5 +90,5 @@ describe('Plugin Validation', () => {
 
     expect(result.output).toBeDefined();
     expect(result.output.length).toBeGreaterThan(0);
-  }, 90000);
+  });
 });
