@@ -263,14 +263,25 @@ This section documents the coding patterns and conventions used throughout this 
   import { RefMap } from './RefMap.js';
   import srvb from './srvb.js';
   ```
-- **Node.js built-ins**: Use the `node:` protocol prefix
+- **Node.js built-ins**: Use the `node:` protocol prefix, prefer async versions
   ```javascript
-  import { execSync } from 'node:child_process';
+  import { exec } from 'node:child_process';
+  import { readFile } from 'node:fs/promises';
   ```
 - **External packages**: Never include extensions
   ```javascript
   import { el } from '@elemaudio/core';
   import invariant from 'invariant';
+  ```
+
+### Package Manager
+
+- **Always use `pnpm`**, never `npm` or `yarn`
+  ```bash
+  pnpm install           # Install dependencies
+  pnpm add <package>     # Add a dependency
+  pnpm add -D <package>  # Add a dev dependency
+  pnpm run <script>      # Run a script
   ```
 
 ### Export Patterns
@@ -383,16 +394,6 @@ ComponentName/
 - **Unused variables**: Prefix with underscore to satisfy linter
   ```typescript
   const [_unused, setter] = result;
-  ```
-
-### DSP Code Patterns
-
-- **Elementary Audio**: Use `el.*` functions from `@elemaudio/core`
-- **Stereo processing**: Return arrays `[left, right]` for stereo output
-- **Parameter smoothing**: Use `el.sm()` for parameter smoothing to prevent clicks
-- **Key props**: Always provide unique `key` props for Elementary nodes
-  ```javascript
-  el.const({ key: 'decay', value: state.decay })
   ```
 
 ## Code Quality Guidelines
