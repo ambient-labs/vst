@@ -235,6 +235,127 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 
 **Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
 
+## Code Standards
+
+This section documents the coding patterns and conventions used throughout this codebase. Follow these standards to maintain consistency.
+
+### Import Conventions
+
+**File extensions in imports:**
+- **TypeScript files importing JS/JSX**: Always include the `.js` or `.jsx` extension
+  ```typescript
+  // In tests/*.ts files
+  import srvb from '../packages/dsp/srvb.js';
+  ```
+- **JSX files importing other JSX**: Include the `.jsx` extension for local imports
+  ```javascript
+  // In packages/frontend/src/*.jsx files
+  import Interface from './Interface.jsx';
+  import Knob from './Knob.jsx';
+  ```
+- **JS files importing local JS**: Always include the `.js` extension
+  ```javascript
+  // In packages/dsp/*.js files
+  import { RefMap } from './RefMap.js';
+  import srvb from './srvb.js';
+  ```
+- **Node.js built-ins**: Use the `node:` protocol prefix
+  ```javascript
+  import { execSync } from 'node:child_process';
+  ```
+- **External packages**: Never include extensions
+  ```javascript
+  import { el } from '@elemaudio/core';
+  import invariant from 'invariant';
+  ```
+
+### Export Patterns
+
+- **React components**: Use default exports
+  ```javascript
+  export default function Interface(props) { ... }
+  export default memo(Knob);
+  ```
+- **Utility classes**: Use named exports
+  ```javascript
+  export class RefMap { ... }
+  ```
+- **DSP functions**: Use default exports for main processing functions
+  ```javascript
+  export default function srvb(props, xl, xr) { ... }
+  ```
+
+### Test File Conventions
+
+- **File naming**: `*.test.ts` in the `tests/` directory
+- **Structure**: Use vitest's `describe`/`it`/`expect` pattern
+- **Constants**: Extract magic numbers into named constants at file top
+  ```typescript
+  const SAMPLE_RATE = 44100;
+  const BLOCK_SIZE = 512;
+  const SMOOTHING_SETTLE_BLOCKS = 20;
+  ```
+- **Test descriptions**: Use behavior-focused descriptions
+  ```typescript
+  it('should produce complete silence at 0% volume', async () => { ... });
+  ```
+
+### React Component Patterns
+
+- **Functional components only**: No class components
+- **Hooks**: Import individual hooks from React
+  ```javascript
+  import { useState, useEffect, useRef, memo } from 'react';
+  ```
+- **Memoization**: Use `memo()` for components that benefit from it
+- **Props destructuring**: Destructure props in function signature or body
+  ```javascript
+  const {className, meterColor, knobColor, thumbColor, ...other} = props;
+  ```
+
+### Runtime Type Checking
+
+- **Use `invariant` for assertions**: Prefer invariant over throwing errors manually
+  ```javascript
+  import invariant from 'invariant';
+  invariant(typeof props === 'object', 'Unexpected props object');
+  ```
+
+### File Organization
+
+- **One component per file**: Each React component gets its own file
+- **Related utilities**: Can be co-located with their main usage
+- **Package structure**: Follow the existing monorepo structure in `packages/`
+
+### Naming Conventions
+
+- **Files**: PascalCase for React components (`Knob.jsx`), camelCase for utilities (`srvb.js`)
+- **Components**: PascalCase (`Interface`, `Knob`, `DragBehavior`)
+- **Functions**: camelCase (`requestParamValueUpdate`, `shouldRender`)
+- **Constants**: SCREAMING_SNAKE_CASE for true constants (`SAMPLE_RATE`, `BLOCK_SIZE`)
+- **Variables**: camelCase
+
+### TypeScript Patterns
+
+- **Vitest typing**: Tests use vitest types, not Jest
+  ```typescript
+  import { describe, it, expect } from 'vitest';
+  ```
+- **Unused variables**: Prefix with underscore to satisfy linter
+  ```typescript
+  const [_unused, setter] = result;
+  ```
+
+### DSP Code Patterns
+
+- **Elementary Audio**: Use `el.*` functions from `@elemaudio/core`
+- **Stereo processing**: Return arrays `[left, right]` for stereo output
+- **Parameter smoothing**: Use `el.sm()` for parameter smoothing to prevent clicks
+- **Key props**: Always provide unique `key` props for Elementary nodes
+  ```javascript
+  el.const({ key: 'decay', value: state.decay })
+  ```
+
 ## Code Quality Guidelines
 
 ### Minimal Code Philosophy
