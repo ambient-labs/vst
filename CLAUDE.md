@@ -324,8 +324,9 @@ This section documents the coding patterns and conventions used throughout this 
   ```
 
 **Mocking with vitest:**
-- Import the module as a type-only namespace, then use `vi.importActual` inside `vi.mock` with type assertion:
+- Import both the module (for use in tests) and a type-only namespace (for type assertion in mocks):
   ```typescript
+  import { myFunction } from './my-module.js';
   import type * as _MyModule from './my-module.js';
 
   vi.mock('./my-module.js', async () => {
@@ -335,6 +336,9 @@ This section documents the coding patterns and conventions used throughout this 
       myFunction: vi.fn().mockImplementation(() => 'mocked'),
     };
   });
+
+  // In tests, use vi.mocked() to access mock functions
+  vi.mocked(myFunction).mockReturnValue('test value');
   ```
 - This pattern preserves types from the actual module while allowing selective mocking
 
