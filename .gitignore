@@ -34,3 +34,6 @@ log.txt
 # Local development
 bin/
 .worktrees/
+
+# Test coverage
+coverage/
