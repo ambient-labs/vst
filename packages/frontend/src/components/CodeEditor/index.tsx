@@ -1,42 +1,17 @@
 import { useCallback, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
+import { darkTheme, basicSetupConfig } from './config';
+import type { CodeEditorProps } from './types';
 
-interface CodeEditorProps {
-  code: string;
-  onChange?: (value: string) => void;
-  readOnly?: boolean;
-  className?: string;
-}
+export type { CodeEditorProps } from './types';
 
-const darkTheme = {
-  '&': {
-    backgroundColor: '#1E293B',
-    color: '#E2E8F0',
-  },
-  '.cm-content': {
-    caretColor: '#EC4899',
-  },
-  '.cm-cursor, .cm-dropCursor': {
-    borderLeftColor: '#EC4899',
-  },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-    backgroundColor: '#334155',
-  },
-  '.cm-gutters': {
-    backgroundColor: '#0F172A',
-    color: '#64748B',
-    border: 'none',
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: '#1E293B',
-  },
-  '.cm-activeLine': {
-    backgroundColor: '#1E293B40',
-  },
-};
-
-export function CodeEditor({ code, onChange, readOnly = false, className = '' }: CodeEditorProps) {
+export function CodeEditor({
+  code,
+  onChange,
+  readOnly = false,
+  className = '',
+}: CodeEditorProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -78,22 +53,7 @@ export function CodeEditor({ code, onChange, readOnly = false, className = '' }:
         onChange={handleChange}
         editable={!readOnly}
         theme={darkTheme}
-        basicSetup={{
-          lineNumbers: true,
-          highlightActiveLineGutter: true,
-          highlightActiveLine: true,
-          foldGutter: false,
-          dropCursor: true,
-          allowMultipleSelections: false,
-          indentOnInput: true,
-          bracketMatching: true,
-          closeBrackets: true,
-          autocompletion: false,
-          rectangularSelection: false,
-          crosshairCursor: false,
-          highlightSelectionMatches: false,
-          searchKeymap: false,
-        }}
+        basicSetup={basicSetupConfig}
       />
     </div>
   );
