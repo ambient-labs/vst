@@ -21,27 +21,16 @@ describe('Plugin Validation', () => {
   let pluginvalPath: string;
   let pluginPath: string;
 
-  beforeAll(() => {
-    pluginvalPath = getPluginvalPath(
-      PLUGINVAL_DIR,
-      platformConfig,
-      process.platform
-    );
+  beforeAll(async () => {
+    pluginvalPath = await getPluginvalPath(PLUGINVAL_DIR, platformConfig, process.platform);
     pluginPath = getPluginPath(process.cwd(), config.pluginName, BUILD_TYPE);
 
     if (!existsSync(pluginPath)) {
-      throw new Error(
-        `Plugin not found at ${pluginPath}. Run 'pnpm run build' first.`
-      );
+      throw new Error(`Plugin not found at ${pluginPath}. Run 'pnpm run build' first.`);
     }
-
-    console.log(`Plugin: ${pluginPath}`);
-    console.log(`Pluginval: ${pluginvalPath}`);
   });
 
   it('should pass pluginval VST3 compliance tests', () => {
-    console.log('Running pluginval on VST3 plugin...');
-
     const result = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '10',
@@ -50,8 +39,6 @@ describe('Plugin Validation', () => {
       PLUGINVAL_DIR,
       '--vst3',
     ]);
-
-    console.log('pluginval output:', result.output);
 
     if (!result.success) {
       throw new Error(
@@ -64,8 +51,6 @@ describe('Plugin Validation', () => {
   }, 180000);
 
   it('should load and unload without crashes', () => {
-    console.log('Testing plugin loading stability...');
-
     const result = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '5',
@@ -74,8 +59,6 @@ describe('Plugin Validation', () => {
       '30000',
       '--vst3',
     ]);
-
-    console.log('Load test output:', result.output);
 
     if (!result.success) {
       throw new Error(
@@ -88,8 +71,6 @@ describe('Plugin Validation', () => {
   }, 90000);
 
   it('should handle parameter changes correctly', () => {
-    console.log('Testing parameter handling...');
-
     const result = runPluginval(pluginvalPath, pluginPath, [
       '--strictness-level',
       '7',
@@ -100,8 +81,6 @@ describe('Plugin Validation', () => {
       '30000',
       '--vst3',
     ]);
-
-    console.log('Parameter test output:', result.output);
 
     if (!result.success) {
       throw new Error(

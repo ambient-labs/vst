@@ -1,62 +1,45 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
-import { mkdirSync, rmSync, existsSync, writeFileSync } from 'fs';
+import { mkdtemp, rm, writeFile, readFile } from 'fs/promises';
+import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
 import { extractZip } from './extract-zip.js';
 
-const TEST_DIR = join(process.cwd(), 'node_modules/.cache/extract-test');
-
 describe('extractZip', () => {
-  beforeEach(() => {
-    mkdirSync(TEST_DIR, { recursive: true });
+  let testDir: string;
+
+  beforeEach(async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'extract-test-'));
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true });
   });
 
-  it('should extract a zip file on unix systems', () => {
+  it('should extract a zip file', async () => {
     // Create a test file and zip it
-    const testFile = join(TEST_DIR, 'test-content.txt');
-    writeFileSync(testFile, 'Hello, World!');
+    const testFile = join(testDir, 'test-content.txt');
+    await writeFile(testFile, 'Hello, World!');
 
-    const zipPath = join(TEST_DIR, 'test.zip');
+    const zipPath = join(testDir, 'test.zip');
     execFileSync('zip', ['-j', zipPath, testFile], { stdio: 'pipe' });
 
-    // Clean up original file
-    rmSync(testFile);
+    // Remove original file
+    await rm(testFile);
 
     // Extract to a subdirectory
-    const extractDir = join(TEST_DIR, 'extracted');
-    mkdirSync(extractDir);
+    const extractDir = join(testDir, 'extracted');
 
-    extractZip(zipPath, extractDir, 'linux');
+    await extractZip(zipPath, extractDir);
 
     // Verify extraction
-    const extractedFile = join(extractDir, 'test-content.txt');
-    expect(existsSync(extractedFile)).toBe(true);
+    const extractedContent = await readFile(join(extractDir, 'test-content.txt'), 'utf-8');
+    expect(extractedContent).toBe('Hello, World!');
   });
 
-  it('should use powershell on win32', () => {
-    // We can't actually test Windows extraction on Linux/macOS,
-    // but we can verify the function accepts win32 platform parameter
-    // This test documents the expected behavior
-    expect(() => {
-      // This will fail on non-Windows, but validates the code path exists
-      if (process.platform === 'win32') {
-        const zipPath = join(TEST_DIR, 'test.zip');
-        const extractDir = join(TEST_DIR, 'extracted');
-        extractZip(zipPath, extractDir, 'win32');
-      }
-    }).not.toThrow();
-  });
+  it('should throw on missing zip file', async () => {
+    const extractDir = join(testDir, 'extracted');
 
-  it('should throw on missing zip file', () => {
-    const extractDir = join(TEST_DIR, 'extracted');
-    mkdirSync(extractDir);
-
-    expect(() =>
-      extractZip('/nonexistent/file.zip', extractDir, 'linux')
-    ).toThrow();
+    await expect(extractZip('/nonexistent/file.zip', extractDir)).rejects.toThrow();
   });
 });

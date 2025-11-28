@@ -1,22 +1,22 @@
 #!/usr/bin/env tsx
 
-import { existsSync, mkdirSync, chmodSync, unlinkSync } from 'fs';
+import { chmod, mkdir, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { loadConfig, type Config } from './load-config.js';
+import { loadConfig } from './load-config.js';
 import { getPluginvalPath } from './get-pluginval-path.js';
 import { downloadFile } from './download-file.js';
 import { extractZip } from './extract-zip.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '../..');
 
 const configPath = join(__dirname, 'config.json');
-const config: Config = await loadConfig(configPath);
+const config = await loadConfig(configPath);
 
 const PLUGINVAL_DIR = join(rootDir, config.cacheDir);
-const platform = process.platform as string;
+const platform = process.platform;
 
 if (!config.platforms[platform]) {
   console.error(`Unsupported platform: ${platform}`);
@@ -25,19 +25,23 @@ if (!config.platforms[platform]) {
 
 const platformConfig = config.platforms[platform];
 
-async function setup(): Promise<string> {
+const tryGetPluginvalPath = async () => {
+  try {
+    return await getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
+  } catch {
+    return null;
+  }
+};
+
+const setup = async () => {
   console.log(`Setting up pluginval ${config.version}...`);
 
-  if (!existsSync(PLUGINVAL_DIR)) {
-    mkdirSync(PLUGINVAL_DIR, { recursive: true });
-  }
+  await mkdir(PLUGINVAL_DIR, { recursive: true });
 
-  try {
-    const binaryPath = getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
-    console.log(`✓ pluginval already installed at: ${binaryPath}`);
-    return binaryPath;
-  } catch {
-    // Not installed, continue with download
+  const existingPath = await tryGetPluginvalPath();
+  if (existingPath) {
+    console.log(`✓ pluginval already installed at: ${existingPath}`);
+    return existingPath;
   }
 
   console.log(`Downloading from ${platformConfig.downloadUrl}...`);
@@ -48,15 +52,15 @@ async function setup(): Promise<string> {
     console.log('✓ Download complete');
 
     console.log('Extracting...');
-    extractZip(zipPath, PLUGINVAL_DIR, platform);
+    await extractZip(zipPath, PLUGINVAL_DIR);
     console.log('✓ Extraction complete');
 
-    unlinkSync(zipPath);
+    await unlink(zipPath);
 
-    const binaryPath = getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
+    const binaryPath = await getPluginvalPath(PLUGINVAL_DIR, platformConfig, platform);
 
     if (platform === 'darwin' || platform === 'linux') {
-      chmodSync(binaryPath, 0o755);
+      await chmod(binaryPath, 0o755);
       console.log('✓ Made binary executable');
     }
 
@@ -65,7 +69,7 @@ async function setup(): Promise<string> {
   } catch (error) {
     if (existsSync(zipPath)) {
       try {
-        unlinkSync(zipPath);
+        await unlink(zipPath);
       } catch {
         // Ignore cleanup errors
       }
@@ -74,7 +78,7 @@ async function setup(): Promise<string> {
     console.error('✗ Setup failed:', errorMessage);
     process.exit(1);
   }
-}
+};
 
 setup().catch((error) => {
   console.error('Fatal error:', error);

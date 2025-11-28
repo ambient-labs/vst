@@ -7,6 +7,6 @@ export default defineConfig({
     exclude: ['tests/plugin-validation.test.ts'],
     globals: false,
     environment: 'node',
-    testTimeout: 60000, // Allow time for native builds
+    testTimeout: 180000, // Allow time for plugin validation (3 minutes)
   },
 });

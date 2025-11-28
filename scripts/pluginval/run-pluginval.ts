@@ -6,11 +6,11 @@ export interface PluginvalResult {
   exitCode?: number;
 }
 
-export function runPluginval(
+export const runPluginval = (
   pluginvalPath: string,
   pluginPath: string,
   args: string[]
-): PluginvalResult {
+): PluginvalResult => {
   try {
     const output = execFileSync(pluginvalPath, [...args, pluginPath], {
       encoding: 'utf-8',
@@ -26,9 +26,7 @@ export function runPluginval(
         status?: number;
       };
 
-      const output = [execError.stdout, execError.stderr]
-        .filter(Boolean)
-        .join('\n');
+      const output = [execError.stdout, execError.stderr].filter(Boolean).join('\n');
 
       return {
         success: false,
@@ -38,4 +36,4 @@ export function runPluginval(
     }
     throw error;
   }
-}
+};

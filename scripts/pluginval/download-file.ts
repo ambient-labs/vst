@@ -1,63 +1,34 @@
-import { createWriteStream, statSync, unlinkSync } from 'fs';
-import https from 'https';
+import { createWriteStream } from 'fs';
+import { mkdir, unlink, stat } from 'fs/promises';
+import { dirname } from 'path';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 
-export async function downloadFile(url: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
-      if (response.statusCode === 302 || response.statusCode === 301) {
-        const redirectUrl = response.headers.location;
-        if (redirectUrl) {
-          if (!redirectUrl.startsWith('https://')) {
-            reject(new Error('Redirect must use HTTPS'));
-            return;
-          }
-          downloadFile(redirectUrl, dest).then(resolve).catch(reject);
-          return;
-        }
-      }
+export const downloadFile = async (url: string, dest: string) => {
+  // Ensure destination directory exists
+  await mkdir(dirname(dest), { recursive: true });
 
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download: ${response.statusCode}`));
-        return;
-      }
+  // Use globalThis.fetch to avoid ESLint no-undef error (Node 18+ native fetch)
+  const response = await globalThis.fetch(url, { redirect: 'follow' });
 
-      const fileStream = createWriteStream(dest);
-      response.pipe(fileStream);
+  if (!response.ok) {
+    throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+  }
 
-      fileStream.on('finish', () => {
-        fileStream.close();
+  if (!response.body) {
+    throw new Error('Response body is empty');
+  }
 
-        try {
-          const stats = statSync(dest);
-          if (stats.size === 0) {
-            reject(new Error('Downloaded file is empty'));
-            return;
-          }
-        } catch (err) {
-          reject(err);
-          return;
-        }
+  const fileStream = createWriteStream(dest);
 
-        resolve();
-      });
+  // Convert web ReadableStream to Node.js Readable and pipe to file
+  const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
+  await pipeline(nodeStream, fileStream);
 
-      fileStream.on('error', (err) => {
-        // Clean up partial file on error
-        try {
-          unlinkSync(dest);
-        } catch {
-          // Ignore cleanup errors
-        }
-        reject(err);
-      });
-    }).on('error', (err) => {
-      // Clean up partial file on error
-      try {
-        unlinkSync(dest);
-      } catch {
-        // Ignore cleanup errors
-      }
-      reject(err);
-    });
-  });
-}
+  // Verify file was downloaded
+  const stats = await stat(dest);
+  if (stats.size === 0) {
+    await unlink(dest);
+    throw new Error('Downloaded file is empty');
+  }
+};

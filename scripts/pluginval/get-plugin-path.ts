@@ -1,11 +1,8 @@
 import { join } from 'path';
 
-export function getPluginPath(
-  rootDir: string,
-  pluginName: string,
-  buildType: string = 'Release'
-): string {
-  return join(
+// Note: "artefacts" is the spelling used by JUCE (British English)
+export const getPluginPath = (rootDir: string, pluginName: string, buildType = 'Release') =>
+  join(
     rootDir,
     'native',
     'build',
@@ -15,4 +12,3 @@ export function getPluginPath(
     'VST3',
     `${pluginName}.vst3`
   );
-}

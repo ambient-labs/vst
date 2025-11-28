@@ -7,6 +7,7 @@ This document outlines the workflow and conventions for Claude Code when working
 Claude Code runs in sandboxed mode by default. This affects how commands should be executed:
 
 **Key constraints:**
+
 - Write access is limited to the project directory and `/tmp/claude/`
 - Network access is restricted to whitelisted hosts (see below)
 - Some shell redirections may fail due to read-only temp directories
@@ -14,12 +15,14 @@ Claude Code runs in sandboxed mode by default. This affects how commands should 
 
 **Network allowlist:**
 The sandbox only allows connections to these hosts:
+
 - `github.com`, `api.github.com`, `raw.githubusercontent.com` - GitHub API access
 - `results-receiver.actions.githubusercontent.com` - GitHub Actions
 
 **Git push in sandbox mode:**
 SSH-based git push (`git push origin branch`) will fail because SSH to github.com is blocked.
 To push changes, either:
+
 1. Disable sandbox for git operations: use `dangerouslyDisableSandbox: true`
 2. Or ask the user to push manually
 
@@ -80,6 +83,7 @@ Use these commands to streamline common workflows:
 - Understand the requirements fully before starting
 
 **GitHub Issues vs Discussions:**
+
 - **Issues**: Track specific, actionable work items (bugs, features, tasks)
 - **Discussions**: Share broader plans, ideas, architecture decisions, and RFCs
 
@@ -457,6 +461,30 @@ ComponentName/
 - Keep functions small and focused
 - Avoid over-engineering solutions
 
+### TypeScript Style
+
+**Async/Await:**
+
+- Always prefer `async`/`await` over callbacks or raw Promises
+- Use `fs/promises` instead of sync `fs` methods when possible
+- Use established libraries for HTTP requests and file operations
+
+**Type Inference:**
+
+- Let TypeScript infer return types - don't specify explicit return types unless necessary for clarity
+- Example: `const getPath = (name: string) => join(root, name)` instead of `function getPath(name: string): string { return join(root, name) }`
+
+**Arrow Functions:**
+
+- For simple functions that just return a value, prefer arrow function expressions
+- Example: `const getPath = (name: string) => join(root, name)`
+
+**Third-Party Libraries:**
+
+- Prefer well-maintained libraries over custom implementations for common tasks
+- Use `extract-zip` for zip extraction, not shell commands
+- Use native `fetch` or established HTTP libraries for downloads
+
 ### Testing
 
 - Integration tests are in `tests/` directory
@@ -465,6 +493,7 @@ ComponentName/
 - All tests must pass before pushing
 
 **Tests Must Be Inline with Code Changes:**
+
 - When adding a feature, include tests in the same PR
 - When fixing a bug, include a regression test in the same PR
 - Do NOT create separate "add tests" PRs - tests belong with the code they test
@@ -503,12 +532,14 @@ Semgrep runs automatically on PRs that modify code files (`.ts`, `.tsx`, `.js`, 
 ### Documentation
 
 **Documentation Must Be Inline with Code Changes:**
+
 - When adding a feature, include relevant documentation in the same PR
 - Update existing docs if your change affects documented behavior
 - Do NOT create separate "add docs" PRs - docs belong with the code they describe
 - Code comments, JSDoc, and README updates are all part of the same unit of work
 
 **What to Document:**
+
 - Public APIs and exported functions
 - Complex algorithms or non-obvious logic
 - Configuration options and their effects
@@ -553,6 +584,7 @@ All AI-generated code goes through the same review process as human-written code
 3. **Human Review**: Final approval from a human maintainer is required
 
 **Review Focus Areas:**
+
 - Security vulnerabilities (injection, XSS, unsafe operations)
 - Performance implications (especially in audio processing paths)
 - Adherence to existing patterns and conventions
@@ -562,17 +594,20 @@ All AI-generated code goes through the same review process as human-written code
 ### Security Considerations
 
 **Code Execution Safety:**
+
 - The DSP code runs in a sandboxed JavaScript environment within the native plugin
 - Never execute arbitrary user input as code
 - Validate all external inputs before processing
 - Be cautious with `JSON.parse()` - wrap in try/catch
 
 **Build and Dependency Security:**
+
 - Only use dependencies from trusted sources (npm registry)
 - Review dependency updates for security advisories
 - Native code changes require extra scrutiny for memory safety
 
 **File System Operations:**
+
 - Scripts should only access expected directories
 - Never write to system directories
 - Validate paths before file operations

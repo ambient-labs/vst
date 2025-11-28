@@ -1,60 +1,61 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
-import { mkdirSync, writeFileSync, rmSync } from 'fs';
+import { mkdtemp, rm, writeFile, mkdir } from 'fs/promises';
+import { tmpdir } from 'os';
 import { getPluginvalPath } from './get-pluginval-path.js';
 import type { PlatformConfig } from './load-config.js';
 
-const TEST_DIR = join(process.cwd(), 'node_modules/.cache/get-pluginval-path-test');
-
 describe('getPluginvalPath', () => {
+  let testDir: string;
+
   const platformConfig: PlatformConfig = {
     downloadUrl: 'https://example.com/pluginval.zip',
     executable: 'pluginval',
     isAppBundle: false,
   };
 
-  beforeEach(() => {
-    mkdirSync(TEST_DIR, { recursive: true });
+  beforeEach(async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'pluginval-path-test-'));
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true });
   });
 
-  it('should find binary at expected path', () => {
-    const binaryPath = join(TEST_DIR, 'pluginval');
-    writeFileSync(binaryPath, 'fake binary');
+  it('should find binary at expected path', async () => {
+    const binaryPath = join(testDir, 'pluginval');
+    await writeFile(binaryPath, 'fake binary');
 
-    const result = getPluginvalPath(TEST_DIR, platformConfig, 'linux');
+    const result = await getPluginvalPath(testDir, platformConfig, 'linux');
 
     expect(result).toBe(binaryPath);
   });
 
-  it('should find binary in subdirectory', () => {
-    const subDir = join(TEST_DIR, 'subdir');
-    mkdirSync(subDir);
+  it('should find binary in subdirectory', async () => {
+    const subDir = join(testDir, 'subdir');
+    await mkdir(subDir);
     const binaryPath = join(subDir, 'pluginval');
-    writeFileSync(binaryPath, 'fake binary');
+    await writeFile(binaryPath, 'fake binary');
 
-    const result = getPluginvalPath(TEST_DIR, platformConfig, 'linux');
+    const result = await getPluginvalPath(testDir, platformConfig, 'linux');
 
     expect(result).toBe(binaryPath);
   });
 
-  it('should find binary in macOS app bundle', () => {
-    const appDir = join(TEST_DIR, 'pluginval.app');
+  it('should find binary in macOS app bundle', async () => {
+    const appDir = join(testDir, 'pluginval.app');
     const macosDir = join(appDir, 'Contents', 'MacOS');
-    mkdirSync(macosDir, { recursive: true });
+    await mkdir(macosDir, { recursive: true });
     const binaryPath = join(macosDir, 'pluginval');
-    writeFileSync(binaryPath, 'fake binary');
+    await writeFile(binaryPath, 'fake binary');
 
-    const result = getPluginvalPath(TEST_DIR, platformConfig, 'darwin');
+    const result = await getPluginvalPath(testDir, platformConfig, 'darwin');
 
     expect(result).toBe(binaryPath);
   });
 
-  it('should throw when binary not found', () => {
-    expect(() => getPluginvalPath(TEST_DIR, platformConfig, 'linux')).toThrow(
+  it('should throw when binary not found', async () => {
+    await expect(getPluginvalPath(testDir, platformConfig, 'linux')).rejects.toThrow(
       "Pluginval binary not found. Run 'pnpm run setup-pluginval' first."
     );
   });

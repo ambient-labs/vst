@@ -1,25 +1,5 @@
-import { execFileSync } from 'child_process';
+import extractZipLib from 'extract-zip';
 
-export function extractZip(
-  zipPath: string,
-  destDir: string,
-  platform: string = process.platform
-): void {
-  if (platform === 'win32') {
-    execFileSync(
-      'powershell',
-      [
-        '-command',
-        'Expand-Archive',
-        '-Path',
-        zipPath,
-        '-DestinationPath',
-        destDir,
-        '-Force',
-      ],
-      { stdio: 'inherit' }
-    );
-  } else {
-    execFileSync('unzip', ['-o', zipPath, '-d', destDir], { stdio: 'inherit' });
-  }
-}
+export const extractZip = async (zipPath: string, destDir: string) => {
+  await extractZipLib(zipPath, { dir: destDir });
+};

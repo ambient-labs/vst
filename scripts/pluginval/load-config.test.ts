@@ -1,21 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'path';
-import { mkdirSync, writeFileSync, rmSync } from 'fs';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
 import { loadConfig } from './load-config.js';
 
-const TEST_DIR = join(process.cwd(), 'node_modules/.cache/load-config-test');
-
 describe('loadConfig', () => {
-  beforeEach(() => {
-    mkdirSync(TEST_DIR, { recursive: true });
+  let testDir: string;
+
+  beforeEach(async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'load-config-test-'));
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true });
   });
 
   it('should load and parse a valid config file', async () => {
-    const testConfigPath = join(TEST_DIR, 'test-config.json');
+    const testConfigPath = join(testDir, 'test-config.json');
     const testConfig = {
       version: 'v1.0.0',
       cacheDir: 'node_modules/.cache/test',
@@ -29,7 +30,7 @@ describe('loadConfig', () => {
       },
     };
 
-    writeFileSync(testConfigPath, JSON.stringify(testConfig));
+    await writeFile(testConfigPath, JSON.stringify(testConfig));
 
     const config = await loadConfig(testConfigPath);
 
@@ -40,8 +41,8 @@ describe('loadConfig', () => {
   });
 
   it('should throw on invalid JSON', async () => {
-    const testConfigPath = join(TEST_DIR, 'invalid-config.json');
-    writeFileSync(testConfigPath, 'not valid json');
+    const testConfigPath = join(testDir, 'invalid-config.json');
+    await writeFile(testConfigPath, 'not valid json');
 
     await expect(loadConfig(testConfigPath)).rejects.toThrow();
   });

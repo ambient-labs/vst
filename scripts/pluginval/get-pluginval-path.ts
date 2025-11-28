@@ -1,43 +1,52 @@
-import { existsSync, readdirSync } from 'fs';
+import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import type { PlatformConfig } from './load-config.js';
 
-export function getPluginvalPath(
+export const getPluginvalPath = async (
   cacheDir: string,
   platformConfig: PlatformConfig,
   platform: string
-): string {
+) => {
   const expectedPath = join(cacheDir, platformConfig.executable);
 
-  if (existsSync(expectedPath)) {
+  try {
+    await stat(expectedPath);
     return expectedPath;
+  } catch {
+    // Not at expected path, search directories
   }
 
-  const files = readdirSync(cacheDir, { withFileTypes: true });
+  const entries = await readdir(cacheDir, { withFileTypes: true });
 
-  for (const file of files) {
-    if (file.isDirectory()) {
-      if (platform === 'darwin' && file.name.endsWith('.app')) {
-        const appBinaryPath = join(
-          cacheDir,
-          file.name,
-          'Contents',
-          'MacOS',
-          platformConfig.executable
-        );
-        if (existsSync(appBinaryPath)) {
-          return appBinaryPath;
-        }
-      }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
 
-      const subFiles = readdirSync(join(cacheDir, file.name));
-      if (subFiles.includes(platformConfig.executable)) {
-        return join(cacheDir, file.name, platformConfig.executable);
+    // Check for macOS app bundle
+    if (platform === 'darwin' && entry.name.endsWith('.app')) {
+      const appBinaryPath = join(
+        cacheDir,
+        entry.name,
+        'Contents',
+        'MacOS',
+        platformConfig.executable
+      );
+      try {
+        await stat(appBinaryPath);
+        return appBinaryPath;
+      } catch {
+        // Not in app bundle
       }
+    }
+
+    // Check direct subdirectory
+    const subPath = join(cacheDir, entry.name, platformConfig.executable);
+    try {
+      await stat(subPath);
+      return subPath;
+    } catch {
+      // Not in subdirectory
     }
   }
 
-  throw new Error(
-    "Pluginval binary not found. Run 'pnpm run setup-pluginval' first."
-  );
-}
+  throw new Error("Pluginval binary not found. Run 'pnpm run setup-pluginval' first.");
+};
