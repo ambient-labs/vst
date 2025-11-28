@@ -27,6 +27,24 @@ export default [
     },
   },
   {
+    files: ['packages/frontend/**/*.ts', 'packages/frontend/**/*.tsx'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        navigator: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        localStorage: 'readonly',
+        KeyboardEvent: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLTextAreaElement: 'readonly',
+        React: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
