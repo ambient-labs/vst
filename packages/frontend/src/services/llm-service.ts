@@ -1,11 +1,19 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateObject, streamObject } from 'ai';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { z } from 'zod';
 
 import { dspCodeSchema } from './schemas.js';
 import { DSPCodeResponse, LLMServiceConfig, LLMErrorCode } from './types.js';
 import { LLMServiceError } from './llm-service-error.js';
 import { mapApiError } from './map-api-error.js';
+
+// Load system prompt from file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const SYSTEM_PROMPT = readFileSync(join(__dirname, 'system-prompt.txt'), 'utf-8');
 
 // ============================================================================
 // API Key Validation
@@ -41,17 +49,6 @@ export function isValidApiKeyFormat(apiKey: string): boolean {
 
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 const DEFAULT_MAX_TOKENS = 4096;
-
-const SYSTEM_PROMPT = `You are an expert audio DSP engineer specializing in ElementaryJS, a functional reactive programming library for audio signal processing.
-
-When generating DSP code:
-1. Use ElementaryJS primitives (el.cycle, el.lowpass, el.highpass, el.delay, etc.)
-2. Ensure the code is complete and can be used directly
-3. Include proper signal flow from input to output
-4. Keep code efficient and avoid unnecessary computations
-5. Use meaningful parameter names in camelCase
-
-The code should export a function that takes input signals and returns processed output signals.`;
 
 /**
  * Service for interacting with Claude API for DSP code generation
