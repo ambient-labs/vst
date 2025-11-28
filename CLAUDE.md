@@ -239,6 +239,12 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 
 This section documents the coding patterns and conventions used throughout this codebase. Follow these standards to maintain consistency.
 
+### Language
+
+- **Always use TypeScript** for new code (`.ts`, `.tsx` files)
+- Existing JavaScript files (`.js`, `.jsx`) may remain, but new features should be TypeScript
+- Enable strict mode in `tsconfig.json`
+
 ### Import Conventions
 
 **File extensions in imports - ALWAYS use `.js` for local imports:**
@@ -286,19 +292,13 @@ This section documents the coding patterns and conventions used throughout this 
 
 ### Export Patterns
 
-- **React components**: Use default exports
-  ```javascript
-  export default function Interface(props) { ... }
-  export default memo(Knob);
+- **Prefer named exports** over default exports for better refactoring support
+  ```typescript
+  export function processAudio(input: AudioBuffer): AudioBuffer { ... }
+  export class AudioService { ... }
+  export const SAMPLE_RATE = 44100;
   ```
-- **Utility classes**: Use named exports
-  ```javascript
-  export class RefMap { ... }
-  ```
-- **DSP functions**: Use default exports for main processing functions
-  ```javascript
-  export default function srvb(props, xl, xr) { ... }
-  ```
+- **Exception**: React components may use default exports when required by framework conventions
 
 ### Test File Conventions
 
@@ -329,6 +329,12 @@ This section documents the coding patterns and conventions used throughout this 
   vi.mock('./dependency.js', () => ({
     someFunction: vi.fn(),
   }));
+  ```
+- Use `as typeof` for type assertions when importing actual modules in mocks
+  ```typescript
+  import * as _ActualModule from './module.js';
+
+  const actual = await vi.importActual('./module.js') as typeof _ActualModule;
   ```
 
 **Coverage requirements:**
