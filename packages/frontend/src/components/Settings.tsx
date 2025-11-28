@@ -14,8 +14,15 @@ export function getStoredApiKey(): string | null {
   return localStorage.getItem(API_KEY_STORAGE_KEY);
 }
 
+const VALID_PROVIDERS: LLMProvider[] = ['anthropic'];
+
+function isValidProvider(value: string | null): value is LLMProvider {
+  return value !== null && VALID_PROVIDERS.includes(value as LLMProvider);
+}
+
 export function getStoredProvider(): LLMProvider {
-  return (localStorage.getItem(PROVIDER_STORAGE_KEY) as LLMProvider) || 'anthropic';
+  const stored = localStorage.getItem(PROVIDER_STORAGE_KEY);
+  return isValidProvider(stored) ? stored : 'anthropic';
 }
 
 export function hasApiKey(): boolean {
@@ -69,7 +76,7 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
     setTestResult(null);
   }, []);
 
-  const handleTestConnection = useCallback(async () => {
+  const handleTestConnection = useCallback(() => {
     if (!apiKey.trim()) {
       setTestResult({ success: false, message: 'Please enter an API key' });
       return;
@@ -78,22 +85,17 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
     setIsTesting(true);
     setTestResult(null);
 
-    try {
-      // Basic validation - check if the key has the expected format
-      if (provider === 'anthropic' && !apiKey.startsWith('sk-ant-')) {
-        setTestResult({ success: false, message: 'Invalid API key format for Anthropic' });
-        return;
-      }
-
-      // In a real implementation, this would call the LLM service to validate
-      // For now, we just validate the format
-      setTestResult({ success: true, message: 'API key format is valid' });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Connection test failed';
-      setTestResult({ success: false, message });
-    } finally {
+    // Basic validation - check if the key has the expected format
+    if (provider === 'anthropic' && !apiKey.startsWith('sk-ant-')) {
+      setTestResult({ success: false, message: 'Invalid API key format for Anthropic' });
       setIsTesting(false);
+      return;
     }
+
+    // In a real implementation, this would call the LLM service to validate
+    // For now, we just validate the format
+    setTestResult({ success: true, message: 'API key format is valid' });
+    setIsTesting(false);
   }, [apiKey, provider]);
 
   if (!isOpen) {
