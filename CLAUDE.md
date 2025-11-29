@@ -509,13 +509,53 @@ SKIP_CODE_REVIEW=1 git commit -m "message"
 **Configuration:**
 The hook is configured in `.claude/settings.json` and implemented in `.claude/hooks/pre-commit-review.sh`.
 
+### Semantic Code Review (`/code-review`)
+
+The `/code-review` command provides semantic analysis of pull requests using multiple specialized agents. This complements the pattern-based pre-commit hook and AST-based Semgrep analysis.
+
+**What it checks:**
+- CLAUDE.md compliance - validates changes against project guidelines
+- Logic bugs - finds semantic bugs that patterns can't catch
+- Git history context - identifies issues based on file history
+- Previous PR comments - surfaces relevant feedback from past reviews
+- Code comment compliance - ensures changes respect inline documentation
+
+**How it works:**
+1. 5 parallel Sonnet agents independently review the PR from different angles
+2. Each finding is scored for confidence (0-100 scale)
+3. Only high-confidence issues (80+) are reported
+4. Results are posted as a GitHub comment with direct code links
+
+**Usage:**
+```bash
+# Review current branch's PR
+/code-review
+
+# Review a specific PR
+/code-review 42
+```
+
+**When to use:**
+- Before requesting human review on significant PRs
+- After CI passes but before merge
+- For PRs touching critical code paths
+- When multiple contributors are involved
+
+**False positive handling:**
+The confidence scoring filters out:
+- Pre-existing issues
+- Linter/typechecker-catchable problems
+- Nitpicks and style issues not in CLAUDE.md
+- Intentional functionality changes
+
 ### Code Review for AI-Generated Code
 
 All AI-generated code goes through the same review process as human-written code:
 
 1. **Local Pre-Commit Hook**: Catches security issues before committing
 2. **Automated Checks**: CI runs linting, tests, builds, and security analysis (Semgrep)
-3. **Human Review**: Final approval from a human maintainer is required
+3. **Semantic Review**: `/code-review` provides LLM-based analysis (optional but recommended)
+4. **Human Review**: Final approval from a human maintainer is required
 
 **Review Focus Areas:**
 - Security vulnerabilities (injection, XSS, unsafe operations)
@@ -569,6 +609,9 @@ pnpm run test:integration  # Run integration tests
 # Code Quality
 pnpm run lint         # Run linter
 pnpm run format       # Format code
+
+# Code Review
+/code-review          # Semantic PR review with confidence scoring
 
 # Git Operations
 gh issue list         # List open issues
