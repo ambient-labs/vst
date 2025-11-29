@@ -52,6 +52,7 @@ STAGED_TESTS=$(echo "$STAGED_FILES" | grep -E '^(tests/|vitest\.integration\.con
 
 # Native: native/**
 STAGED_NATIVE=$(echo "$STAGED_FILES" | grep -E '^native/' || true)
+STAGED_DEPS=$(echo "$STAGED_FILES" | grep -E '^(package\.json|pnpm-lock\.yaml)$' || true)
 
 # Root deps: package.json, pnpm-lock.yaml (triggers all checks)
 STAGED_DEPS=$(echo "$STAGED_FILES" | grep -E '^(package\.json|pnpm-lock\.yaml)$' || true)
