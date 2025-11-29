@@ -44,6 +44,7 @@ STAGED_FRONTEND=$(echo "$STAGED_FILES" | grep -E '^packages/frontend/src/' || tr
 STAGED_DSP=$(echo "$STAGED_FILES" | grep -E '^packages/dsp/' || true)
 STAGED_TESTS=$(echo "$STAGED_FILES" | grep -E '^tests/' || true)
 STAGED_NATIVE=$(echo "$STAGED_FILES" | grep -E '^native/' || true)
+STAGED_DEPS=$(echo "$STAGED_FILES" | grep -E '^(package\.json|pnpm-lock\.yaml)$' || true)
 
 # Track failures
 FAILED_CHECKS=""
@@ -118,20 +119,20 @@ run_check() {
   fi
 }
 
-# Unit tests - frontend (if frontend source changed)
-if [[ -n "$STAGED_FRONTEND" ]]; then
+# Unit tests - frontend (if frontend source or deps changed)
+if [[ -n "$STAGED_FRONTEND" ]] || [[ -n "$STAGED_DEPS" ]]; then
   run_check "unit-tests-frontend" "pnpm --filter frontend test:unit" &
   PIDS="$PIDS $!"
 fi
 
-# Unit tests - DSP (if DSP source changed)
-if [[ -n "$STAGED_DSP" ]]; then
+# Unit tests - DSP (if DSP source or deps changed)
+if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_DEPS" ]]; then
   run_check "unit-tests-dsp" "pnpm --filter dsp test:unit" &
   PIDS="$PIDS $!"
 fi
 
-# Integration tests (if DSP or tests changed)
-if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_TESTS" ]]; then
+# Integration tests (if DSP, tests, or deps changed)
+if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_TESTS" ]] || [[ -n "$STAGED_DEPS" ]]; then
   run_check "integration-tests" "pnpm run test:integration" &
   PIDS="$PIDS $!"
 fi
@@ -147,8 +148,8 @@ if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
   fi
 fi
 
-# Native build (if native code changed)
-if [[ -n "$STAGED_NATIVE" ]]; then
+# Native build (if native code or deps changed)
+if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
   run_check "native-build" "pnpm run build-native" &
   PIDS="$PIDS $!"
 fi
