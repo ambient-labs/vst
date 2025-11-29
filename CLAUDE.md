@@ -327,7 +327,13 @@ gh api repos/ambient-labs/vst/pulls/<PR>/comments
 2. List ALL comments found for user confirmation
 3. Create todo items for each comment
 4. Address each comment systematically
-5. Commit, push, and monitor CI
+5. Commit and push
+6. **Re-fetch both endpoints** to check for new comments added while working
+7. If new comments found, go back to step 3
+8. Only after no new comments, monitor CI
+9. If CI fails and you fix it, re-check for comments again
+
+**CRITICAL**: Always re-check for new comments after pushing. Reviewers may add feedback while you're working on the first batch. Never declare "done" without re-fetching.
 
 See `/review` command for the full workflow.
 

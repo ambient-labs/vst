@@ -1,17 +1,17 @@
-import { join, dirname } from 'path';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadConfig } from './load-config.js';
 import { setup } from './setup.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const packageDir = join(__dirname, '..');
-const rootDir = join(packageDir, '../..');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageDir = path.join(__dirname, '..');
+const rootDir = path.join(packageDir, '../..');
 
 export const main = async () => {
-  const configPath = join(packageDir, 'config.json');
+  const configPath = path.join(packageDir, 'config.json');
   const config = await loadConfig(configPath);
 
-  const cacheDir = join(rootDir, config.cacheDir);
+  const cacheDir = path.join(rootDir, config.cacheDir);
   const platform = process.platform;
 
   if (!config.platforms[platform]) {
