@@ -39,15 +39,23 @@ jobs:
             frontend:
               - 'packages/frontend/src/**'
               - 'packages/frontend/vitest.unit.config.ts'
+              - 'packages/frontend/package.json'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
             dsp:
               - 'packages/dsp/**/*.js'
               - 'packages/dsp/**/*.ts'
               - 'packages/dsp/vitest.unit.config.ts'
+              - 'packages/dsp/package.json'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
             integration:
               - 'packages/dsp/**/*.js'
               - 'packages/dsp/**/*.ts'
               - 'tests/**'
               - 'vitest.integration.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
 
   unit-frontend:
     needs: changes
