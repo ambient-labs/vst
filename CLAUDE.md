@@ -548,11 +548,6 @@ After pattern-based checks pass, the pre-commit hook triggers semantic analysis.
 - Only high-confidence issues are flagged (senior engineer standard)
 - If issues found, Claude asks whether to proceed or fix first
 
-**To skip semantic review:**
-```bash
-SKIP_SEMANTIC_REVIEW=1 git commit -m "message"
-```
-
 **False positive handling:**
 The semantic review ignores:
 - Pre-existing issues (not in the staged diff)

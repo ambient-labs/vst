@@ -267,14 +267,6 @@ fi
 # staged changes for issues that pattern matching cannot catch.
 #
 
-# Skip semantic review if explicitly disabled
-if [[ "${SKIP_SEMANTIC_REVIEW:-}" == "1" ]]; then
-  if [[ -n "$WARNINGS" ]]; then
-    echo "Proceeding with commit..." >&2
-  fi
-  exit 0
-fi
-
 # Find relevant CLAUDE.md files
 CLAUDE_MD_FILES=""
 if [[ -f "$GIT_DIR/CLAUDE.md" ]]; then
