@@ -220,6 +220,23 @@ gh pr create --title "Brief description" --body "Detailed description" --base ma
 - Reference to the issue: `Fixes #<number>`
 - Generated with Claude Code footer
 
+**PR Size Guidelines:**
+
+| Size | Lines Changed | Action |
+|------|---------------|--------|
+| Ideal | ~50 lines | Optimal |
+| Good | <200 lines | Proceed |
+| Acceptable | 200-400 lines | Consider splitting |
+| Too Large | 400+ lines | Must split |
+
+If a PR exceeds 400 lines:
+1. Stop working on the current PR
+2. Go back to the original issue and create sub-issues
+3. Split the work into smaller, independent PRs
+4. Each PR must add value on its own and not break anything
+
+**Note:** These are guidelines. Some changes (renaming a widely-used symbol, large refactors) legitimately touch many lines but are easy to review. Use judgment.
+
 ### 8. Monitor PR Status
 
 After creating or pushing to a PR, **monitor CI checks until all pass**:

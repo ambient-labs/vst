@@ -68,6 +68,35 @@ These checks run on every PR. **All checks block the PR from merging if they fai
 
 ---
 
+## PR Size Guidelines
+
+Keep PRs small for faster, more thorough reviews.
+
+| Size | Lines Changed | Action |
+|------|---------------|--------|
+| **Ideal** | ~50 lines | Optimal for review |
+| **Good** | <200 lines | Reviews complete in <1 hour |
+| **Acceptable** | 200-400 lines | Consider splitting |
+| **Too Large** | 400+ lines | Must split |
+
+### When a PR Gets Too Large
+
+1. **Stop** - Don't keep adding to an oversized PR
+2. **Create sub-issues** - Break the original issue into smaller pieces
+3. **Split the PR** - Create separate PRs for each sub-issue
+4. **Each PR must be self-contained** - Adds value, doesn't break anything
+
+### Why Size Matters
+
+- PRs under 200 lines merge ~40% faster
+- 50-line changes are 15% less likely to be reverted
+- Reviews of 200-400 lines yield 70-90% defect discovery
+- Beyond 400 lines, review quality drops significantly
+
+**Exceptions:** Some changes (renaming widely-used symbols, mechanical refactors) touch many lines but are easy to review. Use judgment.
+
+---
+
 ## Quick Reference
 
 | What | Command | When |
