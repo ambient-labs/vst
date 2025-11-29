@@ -83,6 +83,34 @@ Use these commands to streamline common workflows:
 - **Issues**: Track specific, actionable work items (bugs, features, tasks)
 - **Discussions**: Share broader plans, ideas, architecture decisions, and RFCs
 
+**Issue Dependencies:**
+
+When an issue depends on another issue being completed first:
+
+1. **Note the dependency in the issue body** - Add a "Dependencies" section:
+   ```markdown
+   ## Dependencies
+   - Depends on #XX (brief description of why)
+   ```
+
+2. **Link related issues** - Reference parent/child relationships:
+   ```markdown
+   ## Parent Issue
+   Sub-issue of #XX
+   ```
+
+3. **Update the parent issue** - Add links to sub-issues:
+   ```markdown
+   ## Sub-Issues
+   - #YY - Description
+   - #ZZ - Description (depends on #YY)
+   ```
+
+4. **For PRs with dependencies** - Note in PR description:
+   ```markdown
+   **Note:** This PR should be merged after #XX is merged.
+   ```
+
 ### 2. Branch Creation
 
 **Always start from an up-to-date main branch:**
