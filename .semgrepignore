@@ -24,3 +24,7 @@ package-lock.json
 
 # Tests (scanned separately with test rules if needed)
 tests/
+
+# Internal CLI scripts (not user-facing code)
+# These use path.join with internal config values, not user input
+scripts/pluginval/src/
