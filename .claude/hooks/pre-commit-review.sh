@@ -4,7 +4,26 @@
 #
 # This hook intercepts git commit commands and performs automated code review
 # on staged changes. It blocks commits with security issues and warns about
-# code quality concerns.
+# code quality and hygiene concerns.
+#
+# Checks performed:
+#   BLOCKING (security):
+#     - Hardcoded secrets/credentials
+#     - eval() usage, innerHTML assignment, dangerouslySetInnerHTML
+#     - Shell command injection, SQL injection patterns
+#
+#   WARNINGS (code quality):
+#     - console.log() in non-test files
+#     - TODO/FIXME comments, eslint-disable, @ts-ignore
+#     - Large changes (500+ lines)
+#
+#   WARNINGS (code hygiene):
+#     - Missing .js extension in local imports
+#     - Node.js built-ins without node: protocol
+#     - New JavaScript files (should be TypeScript)
+#     - Default exports (prefer named exports)
+#     - npm usage (should use pnpm)
+#     - Test files in wrong location
 #
 # Input: JSON via stdin containing the tool call details
 # Output: Messages to stderr for Claude to see
@@ -139,6 +158,69 @@ fi
 ADDITIONS=$(echo "$DIFF" | grep -c '^\+' || echo "0")
 if [[ "$ADDITIONS" -gt 500 ]]; then
   WARNINGS="${WARNINGS}\n  - Large change ($ADDITIONS lines added) - consider smaller commits"
+fi
+
+#
+# CODE HYGIENE CHECKS - Warnings for style guideline violations
+#
+
+# Get TypeScript/JavaScript files for hygiene checks
+TS_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+
+if [[ -n "$TS_JS_FILES" ]]; then
+  # Check for missing .js extension in local imports (TypeScript files)
+  # Pattern: import from './foo' or import from '../foo' without extension
+  TS_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx)$' || true)
+  if [[ -n "$TS_FILES" ]]; then
+    if echo "$DIFF" | grep -E "^\+.*from\s+['\"]\.\.?/[^'\"]+[^.][^j][^s]['\"]" >/dev/null 2>&1; then
+      # More precise check: local imports without .js extension
+      if echo "$DIFF" | grep -E "^\+.*from\s+['\"]\./" | grep -v "\.js['\"]" | grep -v "\.jsx['\"]" | grep -v "\.json['\"]" | grep -v "\.css['\"]" >/dev/null 2>&1; then
+        WARNINGS="${WARNINGS}\n  - HYGIENE: Local imports should include .js extension (TypeScript resolves .ts to .js)"
+      fi
+    fi
+  fi
+
+  # Check for Node.js built-ins without node: protocol
+  # Common built-ins that should use node: prefix
+  if echo "$DIFF" | grep -E "^\+.*from\s+['\"]($|fs|path|os|url|util|crypto|http|https|stream|events|buffer|child_process|assert)['\"]" >/dev/null 2>&1; then
+    WARNINGS="${WARNINGS}\n  - HYGIENE: Node.js built-ins should use node: protocol (e.g., 'node:fs' not 'fs')"
+  fi
+
+  # Check for new JavaScript files (should be TypeScript)
+  NEW_JS_FILES=$(echo "$STAGED_FILES" | grep -E '\.js$' | while read -r file; do
+    # Check if file is newly added (not modified)
+    if git -C "$GIT_DIR" diff --cached --diff-filter=A --name-only | grep -q "^${file}$"; then
+      echo "$file"
+    fi
+  done)
+  if [[ -n "$NEW_JS_FILES" ]]; then
+    WARNINGS="${WARNINGS}\n  - HYGIENE: New files should be TypeScript (.ts/.tsx), not JavaScript (.js/.jsx)"
+  fi
+
+  # Check for default exports (prefer named exports)
+  if echo "$DIFF" | grep -E '^\+\s*export\s+default\s+' >/dev/null 2>&1; then
+    # Exclude React components which commonly use default exports
+    if echo "$DIFF" | grep -E '^\+\s*export\s+default\s+' | grep -v 'function\s+[A-Z]' | grep -v 'class\s+[A-Z]' | grep -v 'memo(' >/dev/null 2>&1; then
+      WARNINGS="${WARNINGS}\n  - HYGIENE: Prefer named exports over default exports for better refactoring"
+    fi
+  fi
+fi
+
+# Check for npm usage (should use pnpm)
+if echo "$DIFF" | grep -E '^\+.*(npm\s+(install|i|add|run|exec|ci)\s|"npm":|npm\s+--version)' >/dev/null 2>&1; then
+  WARNINGS="${WARNINGS}\n  - HYGIENE: Use pnpm instead of npm for package management"
+fi
+
+# Check for test files in wrong location
+# Unit tests should be colocated (*.test.ts next to source)
+# Integration tests should be in tests/ directory
+NEW_TEST_FILES=$(echo "$STAGED_FILES" | grep -E '\.test\.(ts|tsx|js|jsx)$' || true)
+if [[ -n "$NEW_TEST_FILES" ]]; then
+  # Check for test files in tests/ that look like unit tests (testing a single module)
+  MISPLACED_UNIT=$(echo "$NEW_TEST_FILES" | grep '^tests/' | grep -v 'integration' | grep -v 'e2e' || true)
+  if [[ -n "$MISPLACED_UNIT" ]]; then
+    WARNINGS="${WARNINGS}\n  - HYGIENE: Unit tests should be colocated with source files, not in tests/"
+  fi
 fi
 
 #
