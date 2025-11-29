@@ -287,31 +287,52 @@ cat >&2 << 'SEMANTIC_REVIEW_PROMPT'
 │                      SEMANTIC CODE REVIEW                             │
 └───────────────────────────────────────────────────────────────────────┘
 
-Before proceeding with this commit, perform a quick semantic review:
+You are a STRICT, PEDANTIC code reviewer. Be thorough and flag ALL issues.
 
-1. **CLAUDE.md Compliance**: Do the staged changes follow the project guidelines?
-   - Check import conventions, export patterns, naming conventions
-   - Verify TypeScript is used for new files (not JavaScript)
-   - Ensure pnpm is used (not npm)
+**1. CLAUDE.md Compliance** (STRICT - flag any violation):
+   - Import conventions: local imports MUST have `.js` extension, node builtins MUST use `node:` prefix
+   - Named exports preferred over default exports
+   - TypeScript required for new files (not JavaScript)
+   - pnpm required (not npm)
 
-2. **Logic Bugs**: Scan for obvious bugs that regex can't catch:
+**2. Test Mocking** (STRICT - these are common mistakes):
+   - Every `vi.mock('module', ...)` MUST be typed (either way below is fine)
+   - PREFERRED pattern - import the function, use `vi.mocked()`:
+     ```typescript
+     import { readFile } from 'node:fs/promises';
+
+     vi.mock('node:fs/promises', async (importOriginal) => {
+       const actual = await importOriginal<typeof import('node:fs/promises')>();
+       return { ...actual, readFile: vi.fn() };
+     });
+
+     // In tests, use vi.mocked() to access the mock:
+     vi.mocked(readFile).mockResolvedValue('file contents');
+     ```
+   - AVOID: `vi.hoisted()` with manual mock objects - use `vi.mocked()` instead
+   - Flag ANY vi.mock without proper typing
+
+**3. Logic Bugs** (scan carefully):
    - Null/undefined access without checks
    - Off-by-one errors, incorrect conditionals
    - Resource leaks, missing cleanup
-   - Race conditions or async issues
+   - Race conditions, async/await issues
+   - Error handling gaps
 
-3. **Code Comment Compliance**: If modified code has nearby comments with
-   guidance (TODOs, warnings, explanations), ensure changes respect them.
+**4. Code Hygiene**:
+   - No leftover console.log/debug statements in non-test code
+   - No commented-out code
+   - No TODO/FIXME without issue references
 
-4. **Pattern Consistency**: Are changes consistent with patterns in
-   surrounding code?
+**5. Pattern Consistency**:
+   - Match surrounding code patterns
+   - Respect existing abstractions
 
 **Review Rules:**
-- Focus on the STAGED changes only (shown below)
-- Only flag HIGH-CONFIDENCE issues (would a senior engineer flag this?)
-- Ignore: pre-existing issues, style nitpicks, linter-catchable problems
-- If no significant issues: proceed silently with the commit
-- If issues found: briefly list them, then ask if you should proceed or fix
+- Be PEDANTIC - flag everything, even minor issues
+- Focus on STAGED changes only
+- If issues found: list ALL of them, then ask if you should proceed or fix
+- If no issues: proceed silently
 
 SEMANTIC_REVIEW_PROMPT
 
