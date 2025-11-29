@@ -19,7 +19,7 @@
     "preview": "pnpm --filter frontend preview",
     "setup-pluginval": "wireit",
     "test:unit": "pnpm --filter frontend test:unit && pnpm --filter dsp test:unit",
-    "test:scripts": "pnpm --filter helpers test",
+    "test:scripts": "pnpm --filter helpers test && pnpm --filter pluginval test",
     "test:unit:coverage": "pnpm --filter frontend test:unit:coverage && pnpm --filter dsp test:unit:coverage",
     "test:integration": "wireit",
     "lint": "eslint .",
@@ -66,9 +66,9 @@
       ]
     },
     "setup-pluginval": {
-      "command": "tsx scripts/pluginval/setup.ts",
+      "command": "tsx scripts/pluginval/src/cli.ts",
       "files": [
-        "scripts/pluginval/setup.ts",
+        "scripts/pluginval/src/**/*.ts",
         "scripts/pluginval/config.json"
       ],
       "output": [
