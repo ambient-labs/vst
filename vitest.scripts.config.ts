@@ -5,5 +5,9 @@ export default defineConfig({
     include: ['scripts/**/*.test.ts'],
     globals: false,
     environment: 'node',
+    fileParallelism: true,
+    sequence: {
+      concurrent: true,
+    },
   },
 });

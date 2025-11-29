@@ -1,12 +1,48 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { join } from 'path';
-import { mkdtemp, rm, readFile } from 'fs/promises';
-import { tmpdir } from 'os';
-import { downloadFile } from './download-file.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type * as _FsModule from 'fs';
+import type * as _FsPromisesModule from 'fs/promises';
+import type * as _StreamPromisesModule from 'stream/promises';
 
-// Mock globalThis.fetch
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+// Use vi.hoisted to create mocks that can be accessed in vi.mock factories
+const mocks = vi.hoisted(() => ({
+  fetch: vi.fn(),
+  createWriteStream: vi.fn(),
+  mkdir: vi.fn(),
+  unlink: vi.fn(),
+  stat: vi.fn(),
+  pipeline: vi.fn(),
+}));
+
+vi.stubGlobal('fetch', mocks.fetch);
+
+vi.mock('fs', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof _FsModule;
+  return {
+    ...actual,
+    createWriteStream: mocks.createWriteStream,
+  };
+});
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof _FsPromisesModule;
+  return {
+    ...actual,
+    mkdir: mocks.mkdir,
+    unlink: mocks.unlink,
+    stat: mocks.stat,
+  };
+});
+
+vi.mock('stream/promises', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof _StreamPromisesModule;
+  return {
+    ...actual,
+    pipeline: mocks.pipeline,
+  };
+});
+
+// Import after mocks are set up
+import { downloadFile } from './download-file.js';
 
 // Helper to create a mock Response with a ReadableStream body
 function createMockResponse(
@@ -33,66 +69,75 @@ function createMockResponse(
 }
 
 describe('downloadFile', () => {
-  let testDir: string;
-
-  beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'download-test-'));
+  beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  afterEach(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
-
   it('should download a file successfully', async () => {
-    const dest = join(testDir, 'test-download.txt');
     const testContent = 'Test file content for download';
+    mocks.fetch.mockResolvedValueOnce(createMockResponse(testContent));
+    mocks.mkdir.mockResolvedValueOnce(undefined);
+    mocks.createWriteStream.mockReturnValueOnce({});
+    mocks.pipeline.mockResolvedValueOnce(undefined);
+    mocks.stat.mockResolvedValueOnce({ size: 100 });
 
-    mockFetch.mockResolvedValueOnce(createMockResponse(testContent));
+    await downloadFile('https://example.com/test-file.txt', '/tmp/test/file.txt');
 
-    await downloadFile('https://example.com/test-file.txt', dest);
-
-    const content = await readFile(dest, 'utf-8');
-    expect(content).toBe(testContent);
-    expect(mockFetch).toHaveBeenCalledWith('https://example.com/test-file.txt', {
+    expect(mocks.fetch).toHaveBeenCalledWith('https://example.com/test-file.txt', {
       redirect: 'follow',
     });
+    expect(mocks.mkdir).toHaveBeenCalledWith('/tmp/test', { recursive: true });
+    expect(mocks.createWriteStream).toHaveBeenCalledWith('/tmp/test/file.txt');
+    expect(mocks.pipeline).toHaveBeenCalled();
+    expect(mocks.stat).toHaveBeenCalledWith('/tmp/test/file.txt');
   });
 
   it('should handle HTTP errors gracefully', async () => {
-    const dest = join(testDir, 'test-error.txt');
-
-    mockFetch.mockResolvedValueOnce(
+    mocks.fetch.mockResolvedValueOnce(
       createMockResponse('', 500, 'Internal Server Error')
     );
+    mocks.mkdir.mockResolvedValueOnce(undefined);
 
-    await expect(downloadFile('https://example.com/error', dest)).rejects.toThrow(
-      '500'
-    );
+    await expect(
+      downloadFile('https://example.com/error', '/tmp/test/error.txt')
+    ).rejects.toThrow('500');
   });
 
   it('should reject on 404 errors', async () => {
-    const dest = join(testDir, 'test-404.txt');
+    mocks.fetch.mockResolvedValueOnce(createMockResponse('', 404, 'Not Found'));
+    mocks.mkdir.mockResolvedValueOnce(undefined);
 
-    mockFetch.mockResolvedValueOnce(createMockResponse('', 404, 'Not Found'));
-
-    await expect(downloadFile('https://example.com/not-found', dest)).rejects.toThrow(
-      '404'
-    );
+    await expect(
+      downloadFile('https://example.com/not-found', '/tmp/test/404.txt')
+    ).rejects.toThrow('404');
   });
 
   it('should throw when response body is empty', async () => {
-    const dest = join(testDir, 'test-no-body.txt');
-
-    mockFetch.mockResolvedValueOnce({
+    mocks.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
       statusText: 'OK',
       body: null,
     } as Response);
+    mocks.mkdir.mockResolvedValueOnce(undefined);
 
-    await expect(downloadFile('https://example.com/no-body', dest)).rejects.toThrow(
-      'Response body is empty'
-    );
+    await expect(
+      downloadFile('https://example.com/no-body', '/tmp/test/no-body.txt')
+    ).rejects.toThrow('Response body is empty');
+  });
+
+  it('should delete file and throw when downloaded file is empty', async () => {
+    mocks.fetch.mockResolvedValueOnce(createMockResponse(''));
+    mocks.mkdir.mockResolvedValueOnce(undefined);
+    mocks.createWriteStream.mockReturnValueOnce({});
+    mocks.pipeline.mockResolvedValueOnce(undefined);
+    mocks.stat.mockResolvedValueOnce({ size: 0 });
+    mocks.unlink.mockResolvedValueOnce(undefined);
+
+    await expect(
+      downloadFile('https://example.com/empty', '/tmp/test/empty.txt')
+    ).rejects.toThrow('Downloaded file is empty');
+
+    expect(mocks.unlink).toHaveBeenCalledWith('/tmp/test/empty.txt');
   });
 });
