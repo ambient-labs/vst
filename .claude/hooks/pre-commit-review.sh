@@ -296,14 +296,13 @@ You are a STRICT, PEDANTIC code reviewer. Be thorough and flag ALL issues.
    - pnpm required (not npm)
 
 **2. Test Mocking** (STRICT - these are common mistakes):
-   - Every `vi.mock('module', ...)` MUST have a type import
+   - Every `vi.mock('module', ...)` MUST be typed (either way below is fine)
    - PREFERRED pattern - import the function, use `vi.mocked()`:
      ```typescript
      import { readFile } from 'node:fs/promises';
-     import type * as _FsPromises from 'node:fs/promises';
 
      vi.mock('node:fs/promises', async (importOriginal) => {
-       const actual = await importOriginal<typeof _FsPromises>();
+       const actual = await importOriginal<typeof import('node:fs/promises')>();
        return { ...actual, readFile: vi.fn() };
      });
 
