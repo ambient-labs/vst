@@ -256,10 +256,82 @@ Reviewing: $FILE_COUNT file(s), $DIFF_LINES lines
 Warnings (non-blocking):
 $(echo -e "$WARNINGS")
 
-Proceeding with commit...
-
 EOF
 fi
 
-# Allow the commit
+#
+# SEMANTIC CODE REVIEW - LLM-based analysis
+#
+# This section outputs a structured prompt for Claude to perform semantic
+# analysis before proceeding with the commit. Claude will evaluate the
+# staged changes for issues that pattern matching cannot catch.
+#
+
+# Find relevant CLAUDE.md files
+CLAUDE_MD_FILES=""
+if [[ -f "$GIT_DIR/CLAUDE.md" ]]; then
+  CLAUDE_MD_FILES="$GIT_DIR/CLAUDE.md"
+fi
+
+# Get unique directories from staged files and check for CLAUDE.md
+for dir in $(echo "$CODE_FILES" | xargs -n1 dirname 2>/dev/null | sort -u); do
+  if [[ -f "$GIT_DIR/$dir/CLAUDE.md" ]]; then
+    CLAUDE_MD_FILES="$CLAUDE_MD_FILES $GIT_DIR/$dir/CLAUDE.md"
+  fi
+done
+
+# Output the semantic review prompt for Claude
+cat >&2 << 'SEMANTIC_REVIEW_PROMPT'
+
+┌───────────────────────────────────────────────────────────────────────┐
+│                      SEMANTIC CODE REVIEW                             │
+└───────────────────────────────────────────────────────────────────────┘
+
+Before proceeding with this commit, perform a quick semantic review:
+
+1. **CLAUDE.md Compliance**: Do the staged changes follow the project guidelines?
+   - Check import conventions, export patterns, naming conventions
+   - Verify TypeScript is used for new files (not JavaScript)
+   - Ensure pnpm is used (not npm)
+
+2. **Logic Bugs**: Scan for obvious bugs that regex can't catch:
+   - Null/undefined access without checks
+   - Off-by-one errors, incorrect conditionals
+   - Resource leaks, missing cleanup
+   - Race conditions or async issues
+
+3. **Code Comment Compliance**: If modified code has nearby comments with
+   guidance (TODOs, warnings, explanations), ensure changes respect them.
+
+4. **Pattern Consistency**: Are changes consistent with patterns in
+   surrounding code?
+
+**Review Rules:**
+- Focus on the STAGED changes only (shown below)
+- Only flag HIGH-CONFIDENCE issues (would a senior engineer flag this?)
+- Ignore: pre-existing issues, style nitpicks, linter-catchable problems
+- If no significant issues: proceed silently with the commit
+- If issues found: briefly list them, then ask if you should proceed or fix
+
+SEMANTIC_REVIEW_PROMPT
+
+# Output the staged diff for Claude to review
+echo "" >&2
+echo "**Staged changes to review:**" >&2
+echo '```diff' >&2
+git -C "$GIT_DIR" diff --cached -- ':!*.sh' ':!*.json' ':!*.md' 2>/dev/null | head -500 >&2
+if [[ "$DIFF_LINES" -gt 500 ]]; then
+  echo "... (truncated, $DIFF_LINES total lines)" >&2
+fi
+echo '```' >&2
+
+# Output relevant CLAUDE.md sections if found
+if [[ -n "$CLAUDE_MD_FILES" ]]; then
+  echo "" >&2
+  echo "**Relevant CLAUDE.md files:** $CLAUDE_MD_FILES" >&2
+fi
+
+echo "" >&2
+
+# Allow the commit - Claude will evaluate and may choose to abort or proceed
 exit 0

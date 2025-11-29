@@ -248,6 +248,23 @@ gh pr create --title "Brief description" --body "Detailed description" --base ma
 - Reference to the issue: `Fixes #<number>`
 - Generated with Claude Code footer
 
+**PR Size Guidelines:**
+
+| Size | Lines Changed | Action |
+|------|---------------|--------|
+| Ideal | ~50 lines | Optimal |
+| Good | <200 lines | Proceed |
+| Acceptable | 200-400 lines | Consider splitting |
+| Too Large | 400+ lines | Must split |
+
+If a PR exceeds 400 lines:
+1. Stop working on the current PR
+2. Go back to the original issue and create sub-issues
+3. Split the work into smaller, independent PRs
+4. Each PR must add value on its own and not break anything
+
+**Note:** These are guidelines. Some changes (renaming a widely-used symbol, large refactors) legitimately touch many lines but are easy to review. Use judgment.
+
 ### 8. Monitor PR Status
 
 After creating or pushing to a PR, **monitor CI checks until all pass**:
@@ -552,14 +569,41 @@ A pre-commit hook automatically reviews staged changes before committing. This r
 - **Passes silently** when no issues found
 - Skips review for non-code files (config, docs, shell scripts)
 
+**To skip pattern-based review (not recommended):**
+```bash
+SKIP_CODE_REVIEW=1 git commit -m "message"
+```
+
 **Configuration:**
 The hook is configured in `.claude/settings.json` and implemented in `.claude/hooks/pre-commit-review.sh`.
+
+### Semantic Code Review (Integrated)
+
+After pattern-based checks pass, the pre-commit hook triggers semantic analysis. This prompts Claude to review the staged diff for issues that pattern matching cannot catch:
+
+**What semantic review checks:**
+- **CLAUDE.md compliance** - import conventions, export patterns, TypeScript usage
+- **Logic bugs** - null access, off-by-one errors, resource leaks, async issues
+- **Code comment compliance** - respects TODO warnings and inline guidance
+- **Pattern consistency** - matches surrounding code patterns
+
+**Behavior:**
+- Runs automatically after pattern checks pass
+- Claude reviews the staged diff and either proceeds silently or flags issues
+- Only high-confidence issues are flagged (senior engineer standard)
+- If issues found, Claude asks whether to proceed or fix first
+
+**False positive handling:**
+The semantic review ignores:
+- Pre-existing issues (not in the staged diff)
+- Style nitpicks and linter-catchable problems
+- Intentional functionality changes
 
 ### Code Review for AI-Generated Code
 
 All AI-generated code goes through the same review process as human-written code:
 
-1. **Local Pre-Commit Hook**: Catches security issues before committing
+1. **Local Pre-Commit Hook**: Pattern-based security checks + semantic analysis
 2. **Automated Checks**: CI runs linting, tests, builds, and security analysis (Semgrep)
 3. **Human Review**: Final approval from a human maintainer is required
 
