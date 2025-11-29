@@ -293,6 +293,9 @@ Before proceeding with this commit, perform a quick semantic review:
    - Check import conventions, export patterns, naming conventions
    - Verify TypeScript is used for new files (not JavaScript)
    - Ensure pnpm is used (not npm)
+   - **Test mocking**: Every `vi.mock('module', ...)` call MUST have a type import:
+     `import type * as _ModuleName from 'module'` OR use inline typing with
+     `importOriginal<typeof import('module')>()`. Flag any vi.mock without typing.
 
 2. **Logic Bugs**: Scan for obvious bugs that regex can't catch:
    - Null/undefined access without checks
