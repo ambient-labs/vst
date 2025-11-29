@@ -32,7 +32,7 @@ log.txt
 .devcontainer
 
 # Local development
-bin/
+/bin/
 .worktrees/
 
 # Test coverage
