@@ -10,6 +10,8 @@ on:
       - 'scripts/build-native.mjs'
       - '.gitmodules'
       - '.github/workflows/main.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   push:
     branches:
       - main
@@ -20,6 +22,8 @@ on:
       - 'scripts/build-native.mjs'
       - '.gitmodules'
       - '.github/workflows/main.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 jobs:
   native:
