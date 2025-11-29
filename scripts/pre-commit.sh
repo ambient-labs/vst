@@ -10,19 +10,12 @@
 #   1 - One or more checks failed (commit blocked)
 #
 # Environment variables:
-#   SKIP_PRE_COMMIT=1 - Skip all pre-commit checks
 #   RUN_SLOW_CHECKS=1 - Run slow checks (Semgrep, native build) locally
 #
 # By default, slow checks (>30s) are skipped locally and run only in CI.
 # Set RUN_SLOW_CHECKS=1 to run them locally.
 
 set -e
-
-# Check for skip flag
-if [[ "${SKIP_PRE_COMMIT:-}" == "1" ]]; then
-  echo "Skipping pre-commit checks (SKIP_PRE_COMMIT=1)"
-  exit 0
-fi
 
 # Get the git directory (support for worktrees)
 GIT_DIR=$(git rev-parse --show-toplevel)

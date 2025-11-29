@@ -40,18 +40,11 @@ The pre-commit script uses the same path filtering as CI - checks only run when 
 - Native build†: `native/**`
 - All checks: Also trigger on root `package.json` or `pnpm-lock.yaml` changes
 
-### Skipping Checks
+### Running Slow Checks Locally
 
 ```bash
 RUN_SLOW_CHECKS=1 git commit -m "message"     # Include slow checks (Semgrep, native build)
-SKIP_PRE_COMMIT=1 git commit -m "message"     # Skip all pre-commit checks
-SKIP_CODE_REVIEW=1 git commit -m "message"    # Skip Claude Code review only
 ```
-
-**When to skip all checks (`SKIP_PRE_COMMIT=1`):**
-- CI is the source of truth; skipping locally just defers failures
-- Acceptable when you've already verified changes pass CI (e.g., rebasing a tested branch)
-- Not acceptable as a workaround for failing checks
 
 ---
 
