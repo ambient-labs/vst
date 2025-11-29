@@ -54,11 +54,20 @@ When Claude Code executes `git commit` commands, a pre-commit hook automatically
 
 ### What it Warns About (Non-blocking)
 
+**Code quality:**
 - `console.log()` statements in non-test files
 - TODO/FIXME comments being added
 - ESLint disable comments
 - `@ts-ignore` usage
 - Large changes (500+ lines)
+
+**Code hygiene:**
+- Missing `.js` extension in local TypeScript imports
+- Node.js built-ins without `node:` protocol
+- New JavaScript files (should be TypeScript)
+- Default exports (prefer named exports)
+- npm usage (should use pnpm)
+- Unit test files in `tests/` (should be colocated)
 
 ### Behavior
 
