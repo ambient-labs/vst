@@ -60,6 +60,7 @@ Use these commands to streamline common workflows:
 | `/research <topic>` | Deep research with experiments | Exploring unfamiliar APIs, libraries, or techniques |
 | `/push` | Push branch and create PR | After implementation is complete |
 | `/new-issue` | Create a GitHub issue | When you identify new work items |
+| `/review <PR>` | Address PR review comments | When asked to address review feedback on a PR |
 
 **`/work` workflow phases:**
 1. **Setup** - Creates worktree and branch
@@ -302,6 +303,33 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
    - Keep PR updated with requested changes
 
 **Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
+
+### 9. Addressing PR Review Comments
+
+When asked to address comments on a PR, **always fetch from BOTH API endpoints first**:
+
+```bash
+# Fetch review bodies (contains overall review comments)
+gh api repos/ambient-labs/vst/pulls/<PR>/reviews
+
+# Fetch line-level comments
+gh api repos/ambient-labs/vst/pulls/<PR>/comments
+```
+
+**Why both endpoints?** GitHub stores PR feedback in two places:
+1. **Review bodies** (`/reviews`) - Overall comments submitted with approve/request changes/comment
+2. **Line comments** (`/comments`) - Comments attached to specific lines of code
+
+**Missing either endpoint means missing feedback.** The `/reviews` endpoint is especially easy to miss but often contains the most important feedback.
+
+**Workflow:**
+1. Fetch both endpoints before any work
+2. List ALL comments found for user confirmation
+3. Create todo items for each comment
+4. Address each comment systematically
+5. Commit, push, and monitor CI
+
+See `/review` command for the full workflow.
 
 ## Code Standards
 

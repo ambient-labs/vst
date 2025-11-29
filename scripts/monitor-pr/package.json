@@ -1,0 +1,19 @@
+{
+  "name": "monitor-pr",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "monitor-pr": "./bin/monitor-pr.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.9"
+  }
+}
