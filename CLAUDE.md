@@ -501,11 +501,6 @@ A pre-commit hook automatically reviews staged changes before committing. This r
 - **Passes silently** when no issues found
 - Skips review for non-code files (config, docs, shell scripts)
 
-**To skip review (not recommended):**
-```bash
-SKIP_CODE_REVIEW=1 git commit -m "message"
-```
-
 **Configuration:**
 The hook is configured in `.claude/settings.json` and implemented in `.claude/hooks/pre-commit-review.sh`.
 
