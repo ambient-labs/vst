@@ -275,6 +275,23 @@ After creating or pushing to a PR, **monitor CI checks until all pass**:
 
 **Do not leave PRs with failing CI checks.** Fix issues immediately after pushing.
 
+### 9. Addressing PR Review Comments
+
+When asked to address comments on a PR, **always fetch and verify comments first**:
+
+1. **Fetch all comments from the API** - before any other work:
+   ```bash
+   gh api repos/ambient-labs/vst/pulls/<PR>/comments
+   ```
+
+2. **List all comments found** - summarize each comment for the user to confirm completeness
+
+3. **Create todo items for each comment** - track every comment, not just ones mentioned in the request
+
+4. **Do not trust conversation summaries** - summaries can miss details; the GitHub API is the source of truth
+
+**Why this matters:** Conversation summaries may only mention some comments. The GitHub API is the authoritative source for what actually needs to be addressed.
+
 ## Code Standards
 
 This section documents the coding patterns and conventions used throughout this codebase. Follow these standards to maintain consistency.
