@@ -6,6 +6,9 @@ import { downloadFile } from 'helpers/download-file';
 import extractZip from 'extract-zip';
 import type { Config, PlatformConfig } from './load-config.js';
 
+// nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
+// Justification: This is a CLI tool, paths come from internal config, not user input
+
 export interface SetupOptions {
   config: Config;
   platformConfig: PlatformConfig;

@@ -2,6 +2,8 @@ import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import type { PlatformConfig } from './load-config.js';
 
+// nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
+// Justification: This is a CLI tool, paths come from internal config, not user input
 export const getPluginvalPath = async (
   cacheDir: string,
   platformConfig: PlatformConfig,
