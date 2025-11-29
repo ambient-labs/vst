@@ -1,15 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type * as _FsPromisesModule from 'fs/promises';
-
-const mocks = vi.hoisted(() => ({
-  readFile: vi.fn(),
-}));
+import { readFile } from 'fs/promises';
 
 vi.mock('fs/promises', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof _FsPromisesModule;
+  const actual = await importOriginal<typeof import('fs/promises')>();
   return {
     ...actual,
-    readFile: mocks.readFile,
+    readFile: vi.fn(),
   };
 });
 
@@ -34,7 +30,7 @@ describe('loadConfig', () => {
       },
     };
 
-    mocks.readFile.mockResolvedValueOnce(JSON.stringify(testConfig));
+    vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(testConfig));
 
     const config = await loadConfig('/path/to/config.json');
 
@@ -42,17 +38,17 @@ describe('loadConfig', () => {
     expect(config.cacheDir).toBe('node_modules/.cache/test');
     expect(config.pluginName).toBe('TestPlugin');
     expect(config.platforms.darwin.executable).toBe('pluginval');
-    expect(mocks.readFile).toHaveBeenCalledWith('/path/to/config.json', 'utf-8');
+    expect(readFile).toHaveBeenCalledWith('/path/to/config.json', 'utf-8');
   });
 
   it('should throw on invalid JSON', async () => {
-    mocks.readFile.mockResolvedValueOnce('not valid json');
+    vi.mocked(readFile).mockResolvedValueOnce('not valid json');
 
     await expect(loadConfig('/path/to/invalid.json')).rejects.toThrow();
   });
 
   it('should throw on missing file', async () => {
-    mocks.readFile.mockRejectedValueOnce(new Error('ENOENT: no such file'));
+    vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT: no such file'));
 
     await expect(loadConfig('/nonexistent/config.json')).rejects.toThrow('ENOENT');
   });

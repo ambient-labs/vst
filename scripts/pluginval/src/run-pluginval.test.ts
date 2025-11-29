@@ -1,15 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type * as _ChildProcessModule from 'child_process';
-
-const mocks = vi.hoisted(() => ({
-  execFileSync: vi.fn(),
-}));
+import { execFileSync } from 'child_process';
 
 vi.mock('child_process', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof _ChildProcessModule;
+  const actual = await importOriginal<typeof import('child_process')>();
   return {
     ...actual,
-    execFileSync: mocks.execFileSync,
+    execFileSync: vi.fn(),
   };
 });
 
@@ -21,14 +17,14 @@ describe('runPluginval', () => {
   });
 
   it('should return success result for successful command', () => {
-    mocks.execFileSync.mockReturnValueOnce('Validation passed\n');
+    vi.mocked(execFileSync).mockReturnValueOnce('Validation passed\n');
 
     const result = runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', ['--validate']);
 
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe('Validation passed\n');
-    expect(mocks.execFileSync).toHaveBeenCalledWith(
+    expect(execFileSync).toHaveBeenCalledWith(
       '/path/to/pluginval',
       ['--validate', '/path/to/plugin.vst3'],
       expect.objectContaining({
@@ -45,7 +41,7 @@ describe('runPluginval', () => {
       stderr: 'validation error',
       status: 1,
     });
-    mocks.execFileSync.mockImplementationOnce(() => {
+    vi.mocked(execFileSync).mockImplementationOnce(() => {
       throw execError;
     });
 
@@ -63,7 +59,7 @@ describe('runPluginval', () => {
       stderr: 'command not found',
       status: 127,
     });
-    mocks.execFileSync.mockImplementationOnce(() => {
+    vi.mocked(execFileSync).mockImplementationOnce(() => {
       throw execError;
     });
 
@@ -73,7 +69,7 @@ describe('runPluginval', () => {
   });
 
   it('should rethrow non-Error exceptions', () => {
-    mocks.execFileSync.mockImplementationOnce(() => {
+    vi.mocked(execFileSync).mockImplementationOnce(() => {
       throw 'string error';
     });
 

@@ -1,18 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type * as _FsPromisesModule from 'fs/promises';
+import { stat, readdir } from 'fs/promises';
 import type { PlatformConfig } from './load-config.js';
 
-const mocks = vi.hoisted(() => ({
-  stat: vi.fn(),
-  readdir: vi.fn(),
-}));
-
 vi.mock('fs/promises', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof _FsPromisesModule;
+  const actual = await importOriginal<typeof import('fs/promises')>();
   return {
     ...actual,
-    stat: mocks.stat,
-    readdir: mocks.readdir,
+    stat: vi.fn(),
+    readdir: vi.fn(),
   };
 });
 
@@ -30,23 +25,23 @@ describe('getPluginvalPath', () => {
   });
 
   it('should find binary at expected path', async () => {
-    mocks.stat.mockResolvedValueOnce({ isFile: () => true });
+    vi.mocked(stat).mockResolvedValueOnce({ isFile: () => true } as never);
 
     const result = await getPluginvalPath('/cache', platformConfig, 'linux');
 
     expect(result).toBe('/cache/pluginval');
-    expect(mocks.stat).toHaveBeenCalledWith('/cache/pluginval');
+    expect(stat).toHaveBeenCalledWith('/cache/pluginval');
   });
 
   it('should find binary in subdirectory', async () => {
     // First stat call (expected path) fails
-    mocks.stat.mockRejectedValueOnce(new Error('ENOENT'));
+    vi.mocked(stat).mockRejectedValueOnce(new Error('ENOENT'));
     // readdir returns a subdirectory
-    mocks.readdir.mockResolvedValueOnce([
+    vi.mocked(readdir).mockResolvedValueOnce([
       { name: 'subdir', isDirectory: () => true },
-    ]);
+    ] as never);
     // stat for subdirectory binary succeeds
-    mocks.stat.mockResolvedValueOnce({ isFile: () => true });
+    vi.mocked(stat).mockResolvedValueOnce({ isFile: () => true } as never);
 
     const result = await getPluginvalPath('/cache', platformConfig, 'linux');
 
@@ -55,13 +50,13 @@ describe('getPluginvalPath', () => {
 
   it('should find binary in macOS app bundle', async () => {
     // First stat call (expected path) fails
-    mocks.stat.mockRejectedValueOnce(new Error('ENOENT'));
+    vi.mocked(stat).mockRejectedValueOnce(new Error('ENOENT'));
     // readdir returns an app bundle
-    mocks.readdir.mockResolvedValueOnce([
+    vi.mocked(readdir).mockResolvedValueOnce([
       { name: 'pluginval.app', isDirectory: () => true },
-    ]);
+    ] as never);
     // stat for app bundle binary succeeds
-    mocks.stat.mockResolvedValueOnce({ isFile: () => true });
+    vi.mocked(stat).mockResolvedValueOnce({ isFile: () => true } as never);
 
     const result = await getPluginvalPath('/cache', platformConfig, 'darwin');
 
@@ -70,9 +65,9 @@ describe('getPluginvalPath', () => {
 
   it('should throw when binary not found', async () => {
     // First stat call (expected path) fails
-    mocks.stat.mockRejectedValueOnce(new Error('ENOENT'));
+    vi.mocked(stat).mockRejectedValueOnce(new Error('ENOENT'));
     // readdir returns empty
-    mocks.readdir.mockResolvedValueOnce([]);
+    vi.mocked(readdir).mockResolvedValueOnce([] as never);
 
     await expect(getPluginvalPath('/cache', platformConfig, 'linux')).rejects.toThrow(
       "Pluginval binary not found. Run 'pnpm run setup-pluginval' first."
