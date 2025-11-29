@@ -534,7 +534,7 @@ The hook is configured in `.claude/settings.json` and implemented in `.claude/ho
 
 ### Semantic Code Review (Integrated)
 
-For changes with 10+ lines, the pre-commit hook also triggers semantic analysis. This prompts Claude to review the staged diff for issues that pattern matching cannot catch:
+After pattern-based checks pass, the pre-commit hook triggers semantic analysis. This prompts Claude to review the staged diff for issues that pattern matching cannot catch:
 
 **What semantic review checks:**
 - **CLAUDE.md compliance** - import conventions, export patterns, TypeScript usage
@@ -543,7 +543,7 @@ For changes with 10+ lines, the pre-commit hook also triggers semantic analysis.
 - **Pattern consistency** - matches surrounding code patterns
 
 **Behavior:**
-- Runs automatically for changes >= 10 lines after pattern checks pass
+- Runs automatically after pattern checks pass
 - Claude reviews the staged diff and either proceeds silently or flags issues
 - Only high-confidence issues are flagged (senior engineer standard)
 - If issues found, Claude asks whether to proceed or fix first

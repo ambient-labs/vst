@@ -267,14 +267,6 @@ fi
 # staged changes for issues that pattern matching cannot catch.
 #
 
-# Skip semantic review for very small changes (< 10 lines)
-if [[ "$DIFF_LINES" -lt 10 ]]; then
-  if [[ -n "$WARNINGS" ]]; then
-    echo "Proceeding with commit..." >&2
-  fi
-  exit 0
-fi
-
 # Skip semantic review if explicitly disabled
 if [[ "${SKIP_SEMANTIC_REVIEW:-}" == "1" ]]; then
   if [[ -n "$WARNINGS" ]]; then
