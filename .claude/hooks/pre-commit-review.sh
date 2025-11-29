@@ -31,9 +31,6 @@
 # Exit codes:
 #   0 - Allow the operation to proceed
 #   2 - Block the operation (stderr message sent to Claude)
-#
-# Environment variables:
-#   SKIP_CODE_REVIEW=1  - Skip the review entirely
 
 # Read the input JSON from stdin
 INPUT=$(cat)
@@ -49,11 +46,6 @@ if [[ "$COMMAND" =~ git[[:space:]]+-C[[:space:]]+([^[:space:]]+) ]]; then
   GIT_DIR="${BASH_REMATCH[1]}"
 else
   GIT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-fi
-
-# Check for skip flag
-if [[ "${SKIP_CODE_REVIEW:-}" == "1" ]]; then
-  exit 0
 fi
 
 # Check if there are staged changes
@@ -246,7 +238,6 @@ Files reviewed:
 $(echo "$CODE_FILES" | sed 's/^/  /')
 
 To fix: Address the security issues above, then try committing again.
-To skip (not recommended): Set SKIP_CODE_REVIEW=1
 
 EOF
   exit 2
