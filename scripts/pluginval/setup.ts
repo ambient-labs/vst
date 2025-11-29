@@ -2,7 +2,7 @@ import { chmod, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { getPluginvalPath } from './get-pluginval-path.js';
-import { downloadFile } from './download-file.js';
+import { downloadFile } from '../helpers/download-file.js';
 import extractZip from 'extract-zip';
 import type { Config, PlatformConfig } from './load-config.js';
 

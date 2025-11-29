@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   chmod: vi.fn(),
 }));
 
-vi.mock('./download-file.js', () => ({
+vi.mock('../helpers/download-file.js', () => ({
   downloadFile: mocks.downloadFile,
 }));
 
