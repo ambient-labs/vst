@@ -2,6 +2,55 @@
 
 This document provides a complete reference for all code quality and hygiene mechanisms in this repository.
 
+---
+
+## What Runs Locally (Pre-Commit)
+
+These checks run automatically on every commit. **All checks block the commit if they fail.**
+
+| Check | Tool | What it Does |
+|-------|------|--------------|
+| **Linting** | ESLint via lint-staged | Checks and auto-fixes code quality issues |
+| **Formatting** | Prettier via lint-staged | Enforces consistent code style |
+| **Security Review** | Claude Code hook | Blocks commits with security vulnerabilities |
+
+### How It Works
+
+1. You run `git commit`
+2. `simple-git-hooks` triggers `lint-staged`
+3. ESLint runs on staged `.ts`, `.tsx`, `.js`, `.jsx` files (auto-fixes applied)
+4. Prettier formats all staged files
+5. **If Claude Code**: Security review hook runs, blocks on vulnerabilities
+6. Commit proceeds only if all checks pass
+
+### Skipping (Emergencies Only)
+
+```bash
+SKIP_SIMPLE_GIT_HOOKS=1 git commit -m "message"  # Skip lint-staged
+SKIP_CODE_REVIEW=1 git commit -m "message"       # Skip Claude security review
+```
+
+---
+
+## What Runs in CI
+
+These checks run on every PR. **All checks block the PR from merging if they fail.**
+
+| Check | Workflow | Triggers On |
+|-------|----------|-------------|
+| **Unit Tests** | `test.yml` | Changes to `packages/frontend/src/**`, `packages/dsp/**` |
+| **Integration Tests** | `test.yml` | Changes to `tests/**`, DSP source files |
+| **Coverage (95%)** | `test.yml` | TypeScript files must have 95% coverage |
+| **Security Scan** | `semgrep.yml` | Changes to `.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h` |
+| **Native Build** | `main.yml` | Changes to `native/**` |
+| **PR Monitor** | `pr-monitor.yml` | All PRs (aggregates all check results) |
+
+### Required Check
+
+**PR Monitor (`Check Commit Status`)** is the only required check for merging. It waits for all other workflows and reports aggregate pass/fail.
+
+---
+
 ## Quick Reference
 
 | What | Command | When |
@@ -13,38 +62,29 @@ This document provides a complete reference for all code quality and hygiene mec
 | Run unit tests | `pnpm run test:unit` | Before pushing |
 | Run integration tests | `pnpm run test:integration` | Before pushing |
 | Full build | `pnpm run build` | Before pushing native changes |
-| Security scan | `pnpm run semgrep` | Optional, runs in CI |
+| Security scan | `pnpm run semgrep` | Optional locally, required in CI |
 
-## Pre-Commit Hooks
+---
 
-Git hooks run automatically on every commit via `simple-git-hooks`.
+## Pre-Commit Hook Details
 
-### What Runs on Commit
+### lint-staged (All Developers)
 
-1. **lint-staged** - Runs ESLint and Prettier on staged files only
+Runs automatically via `simple-git-hooks`:
 
-### Hook Installation
+- **ESLint**: Checks and auto-fixes `.ts`, `.tsx`, `.js`, `.jsx` files
+- **Prettier**: Formats all staged files
 
-Hooks are installed automatically when you run `pnpm install`. If hooks aren't working:
-
+Install hooks (first time or after `pnpm install`):
 ```bash
 pnpm run prepare
 ```
 
-### Skipping Hooks
+### Claude Code Security Review (Claude Code Only)
 
-For emergencies only:
+When Claude Code executes `git commit`, an additional hook reviews staged changes.
 
-```bash
-SKIP_SIMPLE_GIT_HOOKS=1 git commit -m "message"
-```
-
-## Claude Code Pre-Commit Review
-
-When Claude Code executes `git commit` commands, a pre-commit hook automatically reviews staged changes for security issues and code quality.
-
-### What it Checks (Blocking)
-
+**Blocking issues (commit fails):**
 - Hardcoded secrets/credentials (passwords, API keys, AWS keys)
 - `eval()` usage (code injection risk)
 - `innerHTML` assignment (XSS vulnerability)
@@ -52,40 +92,24 @@ When Claude Code executes `git commit` commands, a pre-commit hook automatically
 - Shell command injection patterns
 - SQL injection patterns
 
-### What it Warns About (Non-blocking)
+**Warnings (commit proceeds):**
 
-**Code quality:**
-- `console.log()` statements in non-test files
-- TODO/FIXME comments being added
-- ESLint disable comments
+*Code quality:*
+- `console.log()` in non-test files
+- TODO/FIXME comments
+- eslint-disable comments
 - `@ts-ignore` usage
 - Large changes (500+ lines)
 
-**Code hygiene:**
-- Missing `.js` extension in local TypeScript imports
+*Code hygiene:*
+- Missing `.js` extension in local imports
 - Node.js built-ins without `node:` protocol
 - New JavaScript files (should be TypeScript)
-- Default exports (prefer named exports)
+- Default exports (prefer named)
 - npm usage (should use pnpm)
-- Unit test files in `tests/` (should be colocated)
+- Unit tests in `tests/` (should be colocated)
 
-### Behavior
-
-- **Blocks** commits with security vulnerabilities (exit code 2)
-- **Warns** about code quality issues but allows commit (exit code 0)
-- **Passes silently** when no issues found
-- Skips review for non-code files (config, docs, shell scripts)
-
-### Skipping Review (Not Recommended)
-
-```bash
-SKIP_CODE_REVIEW=1 git commit -m "message"
-```
-
-### Configuration
-
-- Settings: `.claude/settings.json`
-- Hook script: `.claude/hooks/pre-commit-review.sh`
+**Configuration:** `.claude/settings.json`, `.claude/hooks/pre-commit-review.sh`
 
 ## Linting (ESLint)
 
@@ -218,50 +242,6 @@ pnpm run test:integration
 **Current Tests:**
 - `audio-processing.test.ts` - DSP audio processing verification
 - `volume-knob.test.ts` - Volume knob parameter handling
-
-## CI/CD Workflows
-
-### Build Workflow (`main.yml`)
-
-**Triggers:** Changes to native C++ code (`native/**`)
-
-**Platforms:** macOS, Windows, Ubuntu
-
-**What it does:**
-1. Builds the full project (`pnpm run build`)
-2. Verifies VST3 and AU (macOS) artifacts
-3. Uploads build artifacts
-
-### Test Workflow (`test.yml`)
-
-**Triggers:** Changes to source files, tests, or dependencies
-
-**Path-filtered jobs:**
-- `unit-frontend` - Runs when `packages/frontend/src/**` changes
-- `unit-dsp` - Runs when `packages/dsp/**/*.ts` or `packages/dsp/**/*.js` changes
-- `integration` - Runs when `tests/**` or DSP source files change
-
-**What it does:**
-1. Runs unit tests with coverage reporting to Codecov
-2. Runs integration tests
-3. Enforces 95% coverage threshold on TypeScript files
-
-### Semgrep (`semgrep.yml`)
-
-**Triggers:** Changes to code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h`)
-
-**What it does:**
-1. Security-focused static analysis
-2. Reports findings as PR check annotations
-
-### PR Monitor (`pr-monitor.yml`)
-
-**Triggers:** All PRs to main
-
-**What it does:**
-1. Waits for all other workflows to complete
-2. Reports aggregate pass/fail status
-3. **This is the only required check for merging**
 
 ## Build System (Wireit)
 
