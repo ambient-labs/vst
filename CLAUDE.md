@@ -48,7 +48,30 @@ To push changes, either:
 
 ## Workflow Overview
 
-All development work follows this structured process:
+All development work follows this structured process.
+
+### Slash Commands
+
+Use these commands to streamline common workflows:
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/work <issue>` | Start work on a GitHub issue | Beginning any issue - sets up worktree, explores codebase, plans approach |
+| `/research <topic>` | Deep research with experiments | Exploring unfamiliar APIs, libraries, or techniques |
+| `/push` | Push branch and create PR | After implementation is complete |
+| `/new-issue` | Create a GitHub issue | When you identify new work items |
+
+**`/work` workflow phases:**
+1. **Setup** - Creates worktree and branch
+2. **Discovery** - Analyzes issue requirements
+3. **Codebase Exploration** - Finds relevant files and patterns
+4. **Clarifying Questions** - Asks about ambiguities (skipped if clear)
+5. **Planning** - Proposes approaches for complex changes (skipped for simple fixes)
+6. **Ready to Implement** - Summarizes plan and awaits confirmation
+
+**When to skip `/work`:**
+- Trivial changes (typo fixes, simple config updates)
+- You're already in an active worktree for the issue
 
 ### 1. Start with a GitHub Issue
 
