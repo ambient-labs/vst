@@ -599,6 +599,7 @@ pnpm run dev          # Start dev server
 pnpm run build        # Build everything
 
 # Testing
+pnpm run test:unit         # Run unit tests (frontend + dsp)
 pnpm run test:integration  # Run integration tests
 
 # Code Quality

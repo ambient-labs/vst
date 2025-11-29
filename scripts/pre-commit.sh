@@ -193,7 +193,7 @@ if [[ -n "$FAILED_CHECKS" ]]; then
   echo "Failed checks: $FAILED_CHECKS"
   echo ""
   echo "Check the output above for details."
-  echo "To skip checks (not recommended): SKIP_PRE_COMMIT=1 git commit ..."
+  echo "Fix the issues above before committing."
   exit 1
 else
   echo "╔═══════════════════════════════════════════════════════════════════════╗"
