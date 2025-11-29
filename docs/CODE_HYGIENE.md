@@ -15,9 +15,11 @@ These checks run automatically on every commit via `scripts/pre-commit.sh`. **Al
 | **Unit Tests (Frontend)** | Runs frontend unit tests | `packages/frontend/{src/**,vitest.unit.config.ts,package.json}` or root deps |
 | **Unit Tests (DSP)** | Runs DSP unit tests | `packages/dsp/**/*.{js,ts}`, config, or root deps |
 | **Integration Tests** | Runs integration tests | `tests/**`, `vitest.integration.config.ts`, or root deps |
-| **Semgrep** | Security vulnerability scan | Code files (requires Docker) |
-| **Native Build** | Builds C++ plugin | `native/**` or root deps |
-| **Security Review** | Claude Code hook for vulnerabilities | Code files (Claude Code only) |
+| **Semgrep**† | Security vulnerability scan | Code files (requires Docker) |
+| **Native Build**† | Builds C++ plugin | `native/**` or root deps |
+| **Code Review** | Claude Code hook for security & quality | All code files (Claude Code only) |
+
+†**Note:** Semgrep and native build can take >30 seconds. If these slow down your workflow, they can be skipped locally and will still run in CI. Use `SKIP_PRE_COMMIT=1` for the commit, then let CI catch any issues.
 
 ### How It Works
 
@@ -25,7 +27,7 @@ These checks run automatically on every commit via `scripts/pre-commit.sh`. **Al
 2. `simple-git-hooks` triggers `scripts/pre-commit.sh`
 3. **Sequential**: ESLint and Prettier run first (auto-fix and re-stage)
 4. **Parallel**: Tests, Semgrep, and native build run concurrently
-5. **If Claude Code**: Security review hook also runs
+5. **If Claude Code**: Code review hook also runs (security + quality checks)
 6. Commit proceeds only if all checks pass
 
 ### Path Filtering
@@ -42,7 +44,7 @@ The pre-commit script uses the same path filtering as CI - checks only run when 
 
 ```bash
 SKIP_PRE_COMMIT=1 git commit -m "message"     # Skip all pre-commit checks
-SKIP_CODE_REVIEW=1 git commit -m "message"    # Skip Claude security review only
+SKIP_CODE_REVIEW=1 git commit -m "message"    # Skip Claude Code review only
 ```
 
 ---
@@ -104,7 +106,7 @@ Install hooks (first time or after `pnpm install`):
 pnpm run prepare
 ```
 
-### Claude Code Security Review (Claude Code Only)
+### Claude Code Review (Claude Code Only)
 
 When Claude Code executes `git commit`, an additional hook reviews staged changes.
 
