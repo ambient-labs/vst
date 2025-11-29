@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // CLI entry point for monitor-pr
-// Implementation coming in #107
+// Real-time GitHub PR monitoring via webhooks
 
 import { main } from '../src/index.js';
 
-main();
+main().catch((err) => {
+  console.error('Fatal error:', err instanceof Error ? err.message : err);
+  process.exit(1);
+});
