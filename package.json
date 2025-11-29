@@ -66,8 +66,9 @@
       ]
     },
     "setup-pluginval": {
-      "command": "tsx scripts/pluginval/setup.ts",
+      "command": "tsx scripts/pluginval/cli.ts",
       "files": [
+        "scripts/pluginval/cli.ts",
         "scripts/pluginval/setup.ts",
         "scripts/pluginval/config.json"
       ],
