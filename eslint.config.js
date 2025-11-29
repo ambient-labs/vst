@@ -62,6 +62,18 @@ export default [
       },
     },
   },
+  {
+    files: ['scripts/**/*.ts', 'tests/**/*.ts'],
+    languageOptions: {
+      globals: {
+        // Node.js globals
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+  },
   prettier,
   {
     ignores: [

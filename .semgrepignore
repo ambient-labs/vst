@@ -24,3 +24,6 @@ package-lock.json
 
 # Tests (scanned separately with test rules if needed)
 tests/
+
+# Internal build/setup scripts (not handling untrusted input)
+scripts/pluginval/
