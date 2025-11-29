@@ -36,14 +36,24 @@ echo "║                         PRE-COMMIT CHECKS                             
 echo "╚═══════════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Categorize staged files for path filtering
+# Categorize staged files for path filtering (matches CI workflow filters)
 STAGED_CODE=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx)$' || true)
 STAGED_CPP=$(echo "$STAGED_FILES" | grep -E '\.(cpp|h|c)$' || true)
 STAGED_OTHER=$(echo "$STAGED_FILES" | grep -E '\.(json|css|md)$' || true)
-STAGED_FRONTEND=$(echo "$STAGED_FILES" | grep -E '^packages/frontend/src/' || true)
-STAGED_DSP=$(echo "$STAGED_FILES" | grep -E '^packages/dsp/' || true)
-STAGED_TESTS=$(echo "$STAGED_FILES" | grep -E '^tests/' || true)
+
+# Frontend: packages/frontend/src/**, vitest config, package.json
+STAGED_FRONTEND=$(echo "$STAGED_FILES" | grep -E '^packages/frontend/(src/|vitest\.unit\.config\.ts|package\.json)' || true)
+
+# DSP: packages/dsp/**/*.{js,ts}, vitest config, package.json
+STAGED_DSP=$(echo "$STAGED_FILES" | grep -E '^packages/dsp/(.*\.(js|ts)|vitest\.unit\.config\.ts|package\.json)' || true)
+
+# Integration: tests/**, vitest.integration.config.ts
+STAGED_TESTS=$(echo "$STAGED_FILES" | grep -E '^(tests/|vitest\.integration\.config\.ts)' || true)
+
+# Native: native/**
 STAGED_NATIVE=$(echo "$STAGED_FILES" | grep -E '^native/' || true)
+
+# Root deps: package.json, pnpm-lock.yaml (triggers all checks)
 STAGED_DEPS=$(echo "$STAGED_FILES" | grep -E '^(package\.json|pnpm-lock\.yaml)$' || true)
 
 # Track failures
