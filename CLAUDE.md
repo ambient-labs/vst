@@ -600,6 +600,7 @@ pnpm run build        # Build everything
 
 # Testing
 pnpm run test:unit         # Run unit tests (frontend + dsp)
+pnpm run test:scripts      # Run scripts unit tests
 pnpm run test:integration  # Run integration tests
 
 # Code Quality

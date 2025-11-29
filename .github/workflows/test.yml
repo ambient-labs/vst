@@ -6,10 +6,12 @@ on:
     paths:
       - 'packages/dsp/**'
       - 'packages/frontend/**'
+      - 'scripts/**'
       - 'tests/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'vitest.integration.config.ts'
+      - 'vitest.scripts.config.ts'
       - '.github/workflows/test.yml'
   push:
     branches:
@@ -17,10 +19,12 @@ on:
     paths:
       - 'packages/dsp/**'
       - 'packages/frontend/**'
+      - 'scripts/**'
       - 'tests/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'vitest.integration.config.ts'
+      - 'vitest.scripts.config.ts'
       - '.github/workflows/test.yml'
 
 jobs:
@@ -30,6 +34,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       dsp: ${{ steps.filter.outputs.dsp }}
       integration: ${{ steps.filter.outputs.integration }}
+      scripts: ${{ steps.filter.outputs.scripts }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -54,6 +59,11 @@ jobs:
               - 'packages/dsp/**/*.ts'
               - 'tests/**'
               - 'vitest.integration.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            scripts:
+              - 'scripts/**/*.ts'
+              - 'vitest.scripts.config.ts'
               - 'package.json'
               - 'pnpm-lock.yaml'
 
@@ -138,3 +148,25 @@ jobs:
 
       - name: Run integration tests
         run: pnpm run test:integration
+
+  unit-scripts:
+    needs: changes
+    if: ${{ needs.changes.outputs.scripts == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run scripts unit tests
+        run: pnpm run test:scripts

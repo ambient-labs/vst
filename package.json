@@ -20,6 +20,7 @@
     "setup-pluginval": "wireit",
     "test:unit": "pnpm --filter frontend test:unit && pnpm --filter dsp test:unit",
     "test:unit:coverage": "pnpm --filter frontend test:unit:coverage && pnpm --filter dsp test:unit:coverage",
+    "test:scripts": "vitest run --config vitest.scripts.config.ts",
     "test:integration": "wireit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

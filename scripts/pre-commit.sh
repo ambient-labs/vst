@@ -47,6 +47,9 @@ STAGED_DSP=$(echo "$STAGED_FILES" | grep -E '^packages/dsp/(.*\.(js|ts)|vitest\.
 # Integration: tests/**, vitest.integration.config.ts
 STAGED_TESTS=$(echo "$STAGED_FILES" | grep -E '^(tests/|vitest\.integration\.config\.ts)' || true)
 
+# Scripts: scripts/**/*.ts, vitest.scripts.config.ts
+STAGED_SCRIPTS=$(echo "$STAGED_FILES" | grep -E '^(scripts/.*\.ts|vitest\.scripts\.config\.ts)' || true)
+
 # Native: native/**
 STAGED_NATIVE=$(echo "$STAGED_FILES" | grep -E '^native/' || true)
 
@@ -141,6 +144,12 @@ fi
 # Integration tests (if DSP, tests, or deps changed)
 if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_TESTS" ]] || [[ -n "$STAGED_DEPS" ]]; then
   run_check "integration-tests" "pnpm run test:integration" &
+  PIDS="$PIDS $!"
+fi
+
+# Scripts tests (if scripts source or deps changed)
+if [[ -n "$STAGED_SCRIPTS" ]] || [[ -n "$STAGED_DEPS" ]]; then
+  run_check "unit-tests-scripts" "pnpm run test:scripts" &
   PIDS="$PIDS $!"
 fi
 
