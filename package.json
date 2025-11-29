@@ -29,16 +29,7 @@
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,css,md}": [
-      "prettier --write"
-    ]
+    "pre-commit": "./scripts/pre-commit.sh"
   },
   "wireit": {
     "build": {
@@ -101,7 +92,6 @@
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "invariant": "^2.2.4",
-    "lint-staged": "^16.2.7",
     "postcss": "^8.4.24",
     "prettier": "^3.6.2",
     "simple-git-hooks": "^2.13.1",
