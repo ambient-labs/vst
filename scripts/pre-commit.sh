@@ -11,6 +11,10 @@
 #
 # Environment variables:
 #   SKIP_PRE_COMMIT=1 - Skip all pre-commit checks
+#   RUN_SLOW_CHECKS=1 - Run slow checks (Semgrep, native build) locally
+#
+# By default, slow checks (>30s) are skipped locally and run only in CI.
+# Set RUN_SLOW_CHECKS=1 to run them locally.
 
 set -e
 
@@ -147,21 +151,31 @@ if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_TESTS" ]] || [[ -n "$STAGED_DEPS" ]]
   PIDS="$PIDS $!"
 fi
 
-# Semgrep security scan (if code files changed)
-if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
-  # Check if Docker is available
-  if command -v docker &> /dev/null; then
-    run_check "semgrep" "pnpm run semgrep" &
-    PIDS="$PIDS $!"
-  else
-    echo "⚠ Skipping Semgrep (Docker not available)"
+# Slow checks (Semgrep, native build) - skipped by default, run in CI
+if [[ "${RUN_SLOW_CHECKS:-}" == "1" ]]; then
+  # Semgrep security scan (if code files changed)
+  if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
+    if command -v docker &> /dev/null; then
+      run_check "semgrep" "pnpm run semgrep" &
+      PIDS="$PIDS $!"
+    else
+      echo "⚠ Skipping Semgrep (Docker not available)"
+    fi
   fi
-fi
 
-# Native build (if native code or deps changed)
-if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
-  run_check "native-build" "pnpm run build-native" &
-  PIDS="$PIDS $!"
+  # Native build (if native code or deps changed)
+  if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
+    run_check "native-build" "pnpm run build-native" &
+    PIDS="$PIDS $!"
+  fi
+else
+  # Note which slow checks are being skipped
+  if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
+    echo "⚠ Skipping Semgrep (slow, runs in CI; use RUN_SLOW_CHECKS=1 to run locally)"
+  fi
+  if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
+    echo "⚠ Skipping native build (slow, runs in CI; use RUN_SLOW_CHECKS=1 to run locally)"
+  fi
 fi
 
 # Wait for all parallel checks

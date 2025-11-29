@@ -19,14 +19,14 @@ These checks run automatically on every commit via `scripts/pre-commit.sh`. **Al
 | **Native Build**† | Builds C++ plugin | `native/**` or root deps |
 | **Code Review** | Claude Code hook for security & quality | All code files (Claude Code only) |
 
-†**Note:** Semgrep and native build can take >30 seconds. If these slow down your workflow, they can be skipped locally and will still run in CI. Use `SKIP_PRE_COMMIT=1` for the commit, then let CI catch any issues.
+†**Slow checks:** Semgrep and native build take >30 seconds and are **skipped by default** locally. They always run in CI. To run them locally: `RUN_SLOW_CHECKS=1 git commit`
 
 ### How It Works
 
 1. You run `git commit`
 2. `simple-git-hooks` triggers `scripts/pre-commit.sh`
 3. **Sequential**: ESLint and Prettier run first (auto-fix and re-stage)
-4. **Parallel**: Tests, Semgrep, and native build run concurrently
+4. **Parallel**: Tests run concurrently (slow checks skipped by default)
 5. **If Claude Code**: Code review hook also runs (security + quality checks)
 6. Commit proceeds only if all checks pass
 
@@ -37,15 +37,21 @@ The pre-commit script uses the same path filtering as CI - checks only run when 
 - Frontend tests: `packages/frontend/src/**`, `packages/frontend/vitest.unit.config.ts`, `packages/frontend/package.json`
 - DSP tests: `packages/dsp/**/*.{js,ts}`, `packages/dsp/vitest.unit.config.ts`, `packages/dsp/package.json`
 - Integration tests: `tests/**`, `vitest.integration.config.ts`
-- Native build: `native/**`
+- Native build†: `native/**`
 - All checks: Also trigger on root `package.json` or `pnpm-lock.yaml` changes
 
-### Skipping (Emergencies Only)
+### Skipping Checks
 
 ```bash
+RUN_SLOW_CHECKS=1 git commit -m "message"     # Include slow checks (Semgrep, native build)
 SKIP_PRE_COMMIT=1 git commit -m "message"     # Skip all pre-commit checks
 SKIP_CODE_REVIEW=1 git commit -m "message"    # Skip Claude Code review only
 ```
+
+**When to skip all checks (`SKIP_PRE_COMMIT=1`):**
+- CI is the source of truth; skipping locally just defers failures
+- Acceptable when you've already verified changes pass CI (e.g., rebasing a tested branch)
+- Not acceptable as a workaround for failing checks
 
 ---
 
