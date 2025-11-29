@@ -12,11 +12,11 @@ These checks run automatically on every commit via `scripts/pre-commit.sh`. **Al
 |-------|--------------|-------------|
 | **ESLint** | Checks and auto-fixes code quality issues | `.ts`, `.tsx`, `.js`, `.jsx` files |
 | **Prettier** | Enforces consistent code style | Code + `.json`, `.css`, `.md` files |
-| **Unit Tests (Frontend)** | Runs frontend unit tests | `packages/frontend/src/**` or `package.json` changes |
-| **Unit Tests (DSP)** | Runs DSP unit tests | `packages/dsp/**` or `package.json` changes |
-| **Integration Tests** | Runs integration tests | DSP, `tests/**`, or `package.json` changes |
+| **Unit Tests (Frontend)** | Runs frontend unit tests | `packages/frontend/{src/**,vitest.unit.config.ts,package.json}` or root deps |
+| **Unit Tests (DSP)** | Runs DSP unit tests | `packages/dsp/**/*.{js,ts}`, config, or root deps |
+| **Integration Tests** | Runs integration tests | `tests/**`, `vitest.integration.config.ts`, or root deps |
 | **Semgrep** | Security vulnerability scan | Code files (requires Docker) |
-| **Native Build** | Builds C++ plugin | `native/**` or `package.json` changes |
+| **Native Build** | Builds C++ plugin | `native/**` or root deps |
 | **Security Review** | Claude Code hook for vulnerabilities | Code files (Claude Code only) |
 
 ### How It Works
@@ -32,11 +32,11 @@ These checks run automatically on every commit via `scripts/pre-commit.sh`. **Al
 
 The pre-commit script uses the same path filtering as CI - checks only run when relevant files are staged:
 
-- Frontend tests: Only when `packages/frontend/src/**` changes
-- DSP tests: Only when `packages/dsp/**` changes
-- Integration tests: Only when DSP or `tests/**` changes
-- Native build: Only when `native/**` changes
-- All checks: Also trigger on `package.json` or `pnpm-lock.yaml` changes
+- Frontend tests: `packages/frontend/src/**`, `packages/frontend/vitest.unit.config.ts`, `packages/frontend/package.json`
+- DSP tests: `packages/dsp/**/*.{js,ts}`, `packages/dsp/vitest.unit.config.ts`, `packages/dsp/package.json`
+- Integration tests: `tests/**`, `vitest.integration.config.ts`
+- Native build: `native/**`
+- All checks: Also trigger on root `package.json` or `pnpm-lock.yaml` changes
 
 ### Skipping (Emergencies Only)
 
