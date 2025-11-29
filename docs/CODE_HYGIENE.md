@@ -6,28 +6,43 @@ This document provides a complete reference for all code quality and hygiene mec
 
 ## What Runs Locally (Pre-Commit)
 
-These checks run automatically on every commit. **All checks block the commit if they fail.**
+These checks run automatically on every commit via `scripts/pre-commit.sh`. **All checks block the commit if they fail.**
 
-| Check | Tool | What it Does |
-|-------|------|--------------|
-| **Linting** | ESLint via lint-staged | Checks and auto-fixes code quality issues |
-| **Formatting** | Prettier via lint-staged | Enforces consistent code style |
-| **Security Review** | Claude Code hook | Blocks commits with security vulnerabilities |
+| Check | What it Does | Triggers On |
+|-------|--------------|-------------|
+| **ESLint** | Checks and auto-fixes code quality issues | `.ts`, `.tsx`, `.js`, `.jsx` files |
+| **Prettier** | Enforces consistent code style | Code + `.json`, `.css`, `.md` files |
+| **Unit Tests (Frontend)** | Runs frontend unit tests | `packages/frontend/src/**` or `package.json` changes |
+| **Unit Tests (DSP)** | Runs DSP unit tests | `packages/dsp/**` or `package.json` changes |
+| **Integration Tests** | Runs integration tests | DSP, `tests/**`, or `package.json` changes |
+| **Semgrep** | Security vulnerability scan | Code files (requires Docker) |
+| **Native Build** | Builds C++ plugin | `native/**` or `package.json` changes |
+| **Security Review** | Claude Code hook for vulnerabilities | Code files (Claude Code only) |
 
 ### How It Works
 
 1. You run `git commit`
-2. `simple-git-hooks` triggers `lint-staged`
-3. ESLint runs on staged `.ts`, `.tsx`, `.js`, `.jsx` files (auto-fixes applied)
-4. Prettier formats all staged files
-5. **If Claude Code**: Security review hook runs, blocks on vulnerabilities
+2. `simple-git-hooks` triggers `scripts/pre-commit.sh`
+3. **Sequential**: ESLint and Prettier run first (auto-fix and re-stage)
+4. **Parallel**: Tests, Semgrep, and native build run concurrently
+5. **If Claude Code**: Security review hook also runs
 6. Commit proceeds only if all checks pass
+
+### Path Filtering
+
+The pre-commit script uses the same path filtering as CI - checks only run when relevant files are staged:
+
+- Frontend tests: Only when `packages/frontend/src/**` changes
+- DSP tests: Only when `packages/dsp/**` changes
+- Integration tests: Only when DSP or `tests/**` changes
+- Native build: Only when `native/**` changes
+- All checks: Also trigger on `package.json` or `pnpm-lock.yaml` changes
 
 ### Skipping (Emergencies Only)
 
 ```bash
-SKIP_SIMPLE_GIT_HOOKS=1 git commit -m "message"  # Skip lint-staged
-SKIP_CODE_REVIEW=1 git commit -m "message"       # Skip Claude security review
+SKIP_PRE_COMMIT=1 git commit -m "message"     # Skip all pre-commit checks
+SKIP_CODE_REVIEW=1 git commit -m "message"    # Skip Claude security review only
 ```
 
 ---
@@ -38,11 +53,12 @@ These checks run on every PR. **All checks block the PR from merging if they fai
 
 | Check | Workflow | Triggers On |
 |-------|----------|-------------|
-| **Unit Tests** | `test.yml` | Changes to `packages/frontend/src/**`, `packages/dsp/**` |
-| **Integration Tests** | `test.yml` | Changes to `tests/**`, DSP source files |
+| **Unit Tests (Frontend)** | `test.yml` | `packages/frontend/src/**`, `package.json` |
+| **Unit Tests (DSP)** | `test.yml` | `packages/dsp/**`, `package.json` |
+| **Integration Tests** | `test.yml` | DSP files, `tests/**`, `package.json` |
 | **Coverage (95%)** | `test.yml` | TypeScript files must have 95% coverage |
-| **Security Scan** | `semgrep.yml` | Changes to `.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h` |
-| **Native Build** | `main.yml` | Changes to `native/**` |
+| **Security Scan** | `semgrep.yml` | `.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h` |
+| **Native Build** | `main.yml` | `native/**`, `package.json`, `pnpm-lock.yaml` |
 | **PR Monitor** | `pr-monitor.yml` | All PRs (aggregates all check results) |
 
 ### Required Check
@@ -62,18 +78,26 @@ These checks run on every PR. **All checks block the PR from merging if they fai
 | Run unit tests | `pnpm run test:unit` | Before pushing |
 | Run integration tests | `pnpm run test:integration` | Before pushing |
 | Full build | `pnpm run build` | Before pushing native changes |
-| Security scan | `pnpm run semgrep` | Optional locally, required in CI |
+| Security scan | `pnpm run semgrep` | Optional locally (requires Docker), required in CI |
 
 ---
 
 ## Pre-Commit Hook Details
 
-### lint-staged (All Developers)
+### Main Pre-Commit Script (All Developers)
 
-Runs automatically via `simple-git-hooks`:
+The script `scripts/pre-commit.sh` runs the same checks as CI locally:
 
-- **ESLint**: Checks and auto-fixes `.ts`, `.tsx`, `.js`, `.jsx` files
-- **Prettier**: Formats all staged files
+**Step 1 - Lint & Format (Sequential):**
+- ESLint checks and auto-fixes staged code files
+- Prettier formats all staged files
+- Fixed files are automatically re-staged
+
+**Step 2 - Tests & Security (Parallel):**
+- Unit tests run if relevant source files changed
+- Integration tests run if DSP or test files changed
+- Semgrep runs if Docker is available
+- Native build runs if native code changed
 
 Install hooks (first time or after `pnpm install`):
 ```bash
@@ -280,7 +304,7 @@ Ensure you're not in an ignored directory. Check `eslint.config.js` ignores.
 
 ### Prettier formatting differs from ESLint
 
-Both tools are configured to be compatible via `eslint-config-prettier`. If conflicts occur, Prettier takes precedence (it runs second in lint-staged).
+Both tools are configured to be compatible via `eslint-config-prettier`. If conflicts occur, Prettier takes precedence (it runs second in the pre-commit script).
 
 ### Coverage threshold failures
 
@@ -294,6 +318,10 @@ If coverage is below 95% for a TypeScript file:
 Integration tests have a 60-second timeout. If tests are slow, check for:
 - Missing dependencies (`pnpm install`)
 - Build issues (run `pnpm run build` first for native tests)
+
+### Semgrep not running locally
+
+Semgrep requires Docker. If Docker is not available, the pre-commit hook will skip Semgrep with a warning. Install Docker to run security scans locally.
 
 ## Package Scripts Reference
 
