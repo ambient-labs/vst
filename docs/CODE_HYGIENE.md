@@ -374,112 +374,87 @@ Semgrep requires Docker. If Docker is not available, the pre-commit hook will sk
 
 ## Codebase Patterns & Idioms
 
-This section documents the specific patterns and conventions established in this codebase. Follow these to maintain consistency.
+This section documents the specific patterns and conventions for this codebase. React patterns follow modern best practices (2024-2025); TypeScript/DSP patterns follow our established conventions.
 
 ### React Component Patterns
 
-**Function declarations over arrow functions:**
-Components use `function` declarations, not arrow functions. This applies to all components, hooks callbacks, and handlers.
+**Function declarations for components:**
+Use function declarations (not arrow functions) for React components. This provides better stack traces and matches modern React conventions.
 
-```javascript
+```typescript
 // ✅ Correct
-export default function Interface(props) { ... }
-function Knob(props) { ... }
-
-// ❌ Avoid
-const Interface = (props) => { ... }
-const Knob = (props) => { ... }
-```
-
-**Named function expressions in hooks:**
-Use named `function` expressions in `useEffect` and other hooks, not arrow functions.
-
-```javascript
-// ✅ Correct (packages/frontend/src/Knob.jsx:61-78)
-useEffect(function() {
-  const canvas = canvasRef.current;
-  observerRef.current = new ResizeObserver(function(entries) {
-    for (const entry of entries) {
-      setBounds({ ... });
-    }
-  });
-  return function() {
-    observerRef.current.disconnect();
-  };
-}, []);
-
-// ❌ Avoid
-useEffect(() => {
+export function AudioKnob({ value, onChange, className }: AudioKnobProps) {
   // ...
-  return () => { ... };
-}, []);
+}
+
+// ❌ Avoid
+const AudioKnob = ({ value, onChange }: AudioKnobProps) => { ... }
 ```
 
-**Props destructuring in function body:**
-Destructure props inside the function body, not in the signature.
+**Props destructuring in signature:**
+Destructure props directly in the function signature for clarity and IDE support.
 
-```javascript
-// ✅ Correct (packages/frontend/src/Knob.jsx:58)
+```typescript
+// ✅ Correct - destructure in signature
+export function Knob({
+  value,
+  onChange,
+  className,
+  ...rest
+}: KnobProps) {
+  return <div className={className} {...rest} />;
+}
+
+// ❌ Avoid - destructure in body
 function Knob(props) {
-  const {className, meterColor, knobColor, thumbColor, ...other} = props;
-  // ...
-}
-
-// ❌ Avoid
-function Knob({className, meterColor, ...other}) {
-  // ...
+  const { value, onChange, className, ...rest } = props;
 }
 ```
 
-**Custom `cx` utility for class names:**
-Use the inline `cx` utility for conditional class concatenation (not the `classnames` library).
+**Named functions in useEffect:**
+Use named function expressions in hooks for better debugging - stack traces show the function name instead of "(anonymous)".
 
-```javascript
-// ✅ Correct - inline utility (packages/frontend/src/Knob.jsx:7-9)
-function cx(...classes) {
-  return classes.filter(Boolean).join(' ')
-}
+```typescript
+// ✅ Correct - named functions
+useEffect(function syncAudioParameter() {
+  // Effect logic here
+  return function cleanupAudioParameter() {
+    // Cleanup logic
+  };
+}, [value]);
 
-const classes = cx(className, 'relative touch-none');
+// ❌ Avoid - anonymous arrows
+useEffect(() => {
+  return () => {};
+}, [value]);
+```
 
-// ❌ Avoid
+**Use clsx for class names:**
+Use `clsx` (not `classnames`) for conditional class concatenation - it's smaller (239B vs 700B) and faster.
+
+```typescript
+// ✅ Correct
+import { clsx } from 'clsx';
+
+const classes = clsx(
+  'knob-base',
+  isDragging && 'knob-dragging',
+  className
+);
+
+// ❌ Avoid - inline utility or classnames
+function cx(...classes) { return classes.filter(Boolean).join(' ') }
 import cx from 'classnames';
 ```
 
 **Props spreading with rest parameters:**
-Pass through unhandled props using rest spreading.
+Pass through unhandled props using rest spreading for component flexibility.
 
-```javascript
-// ✅ Correct (packages/frontend/src/Knob.jsx:91)
-const {className, meterColor, knobColor, thumbColor, ...other} = props;
-return <DragBehavior className={classes} {...other}>
-```
-
-### State Management (Zustand)
-
-**Vanilla store + React hooks wrapper:**
-Create vanilla stores first, then wrap with React hooks. This allows access both inside and outside React components.
-
-```javascript
-// ✅ Correct pattern (packages/frontend/src/main.jsx:12-20)
-import createHooks from 'zustand'
-import createStore from 'zustand/vanilla'
-
-const store = createStore(() => ({}));
-const useStore = createHooks(store);
-
-const errorStore = createStore(() => ({ error: null }));
-const useErrorStore = createHooks(errorStore);
-```
-
-**Functional setState with previous state:**
-Use callback form when updating state based on previous values.
-
-```javascript
-// ✅ Correct (packages/frontend/src/main.jsx:40-42)
-logStore.setState((state) => ({
-  logs: [...(state.logs || []).slice(-99), { timestamp, level, message }]
-}));
+```typescript
+// ✅ Correct
+export function Button({ variant, className, ...rest }: ButtonProps) {
+  return <button className={clsx(variants[variant], className)} {...rest} />;
+}
 ```
 
 ### Native Interop Patterns
@@ -491,10 +466,6 @@ Register callbacks on `globalThis` for native code to call.
 // ✅ Correct (packages/frontend/src/main.jsx:80-86)
 globalThis.__receiveStateChange__ = function(state) {
   store.setState(JSON.parse(state));
-};
-
-globalThis.__receiveError__ = (err) => {
-  errorStore.setState({ error: err });
 };
 ```
 
@@ -508,7 +479,9 @@ if (typeof globalThis.__postNativeMessage__ === 'function') {
 }
 ```
 
-### DSP Patterns
+### DSP/TypeScript Patterns
+
+These patterns are specific to this codebase and must be followed exactly.
 
 **shouldRender optimization:**
 Use a decision function to determine when full re-renders are needed vs. ref updates.
@@ -555,39 +528,6 @@ Use the `invariant` library for runtime type checks and assertions.
 // ✅ Correct (packages/dsp/srvb.js:5)
 import invariant from 'invariant';
 invariant(typeof props === 'object', 'Unexpected props object');
-```
-
-### Canvas & UI Patterns
-
-**Double-resolution canvas:**
-Render canvas at 2x CSS size for crisp display on retina screens.
-
-```javascript
-// ✅ Correct (packages/frontend/src/Knob.jsx:66-69)
-observerRef.current = new ResizeObserver(function(entries) {
-  for (const entry of entries) {
-    setBounds({
-      width: 2 * entry.contentRect.width,
-      height: 2 * entry.contentRect.height,
-    });
-  }
-});
-```
-
-**ResizeObserver with polyfill:**
-Use the `resize-observer-polyfill` for cross-browser support.
-
-```javascript
-// ✅ Correct (packages/frontend/src/Knob.jsx:2)
-import ResizeObserver from 'resize-observer-polyfill';
-```
-
-**Value clamping pattern:**
-Clamp values to 0-1 range using `Math.max(0, Math.min(1, value))`.
-
-```javascript
-// ✅ Correct (packages/frontend/src/DragBehavior.jsx:22, 25, 36)
-onChange(Math.max(0, Math.min(1, dv)));
 ```
 
 ### Testing Patterns
@@ -705,63 +645,3 @@ import Interface from './Interface.jsx';
 import Knob from './Knob.jsx';
 ```
 
-### Console Override Pattern
-
-Override console methods to capture logs with timestamps while preserving original behavior.
-
-```javascript
-// ✅ Correct pattern (packages/frontend/src/main.jsx:22-52)
-const originalConsoleLog = console.log;
-
-function addLog(level, ...args) {
-  const timestamp = new Date().toLocaleTimeString();
-  const message = args.map(arg => {
-    if (typeof arg === 'object') {
-      try { return JSON.stringify(arg, null, 2); }
-      catch (e) { return String(arg); }
-    }
-    return String(arg);
-  }).join(' ');
-
-  logStore.setState((state) => ({
-    logs: [...(state.logs || []).slice(-99), { timestamp, level, message }]
-  }));
-
-  originalConsoleLog(...args);  // Still call original
-}
-
-console.log = (...args) => addLog('log', ...args);
-```
-
-### Custom Vite Plugin for HMR
-
-Create custom Vite plugins for specialized hot reload behavior.
-
-```javascript
-// ✅ Correct pattern (packages/frontend/vite.config.js:17-31)
-function pubDirReloadPlugin() {
-  return {
-    name: 'pubDirReload',
-    handleHotUpdate({file, modules, server}) {
-      if (file.includes('dsp.main.js')) {
-        server.ws.send({
-          type: 'custom',
-          event: 'reload-dsp',
-        });
-      }
-      return modules;
-    }
-  };
-}
-```
-
-Catch custom HMR events in client code:
-
-```javascript
-// packages/frontend/src/main.jsx:71-77
-if (process.env.NODE_ENV !== 'production') {
-  import.meta.hot.on('reload-dsp', () => {
-    globalThis.__postNativeMessage__('reload');
-  });
-}
-```
