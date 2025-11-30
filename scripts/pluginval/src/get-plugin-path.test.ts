@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import { getPluginPath } from './get-plugin-path.js';
 
 describe('getPluginPath', () => {
-  it.each([
+  test.each([
     {
       rootDir: '/root',
       pluginName: 'MyPlugin',

@@ -1,15 +1,6 @@
-import { join } from 'path';
+import path from 'path';
 
 // Note: "artefacts" is the spelling used by JUCE (British English)
+// nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
 export const getPluginPath = (rootDir: string, pluginName: string, buildType = 'Release') =>
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-  join(
-    rootDir,
-    'native',
-    'build',
-    'scripted',
-    `${pluginName}_artefacts`,
-    buildType,
-    'VST3',
-    `${pluginName}.vst3`
-  );
+  path.join(rootDir, 'native', 'build', 'scripted', `${pluginName}_artefacts`, buildType, 'VST3', `${pluginName}.vst3`);

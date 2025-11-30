@@ -1,6 +1,6 @@
 import { chmod, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import path from 'path';
 import { getPluginvalPath } from './get-pluginval-path.js';
 import { downloadFile } from 'helpers/download-file';
 import extractZip from 'extract-zip';
@@ -49,7 +49,7 @@ export const setup = async (options: SetupOptions): Promise<SetupResult> => {
 
   logger.log(`Downloading from ${platformConfig.downloadUrl}...`);
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-  const zipPath = join(cacheDir, 'pluginval.zip');
+  const zipPath = path.join(cacheDir, 'pluginval.zip');
 
   try {
     await downloadFile(platformConfig.downloadUrl, zipPath);

@@ -1,5 +1,5 @@
 import { readdir, stat } from 'fs/promises';
-import { join } from 'path';
+import path from 'path';
 import type { PlatformConfig } from './load-config.js';
 
 export const getPluginvalPath = async (
@@ -8,7 +8,7 @@ export const getPluginvalPath = async (
   platform: string
 ) => {
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-  const expectedPath = join(cacheDir, platformConfig.executable);
+  const expectedPath = path.join(cacheDir, platformConfig.executable);
 
   try {
     await stat(expectedPath);
@@ -25,13 +25,7 @@ export const getPluginvalPath = async (
     // Check for macOS app bundle
     if (platform === 'darwin' && entry.name.endsWith('.app')) {
       // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-      const appBinaryPath = join(
-        cacheDir,
-        entry.name,
-        'Contents',
-        'MacOS',
-        platformConfig.executable
-      );
+      const appBinaryPath = path.join(cacheDir, entry.name, 'Contents', 'MacOS', platformConfig.executable);
       try {
         await stat(appBinaryPath);
         return appBinaryPath;
@@ -42,7 +36,7 @@ export const getPluginvalPath = async (
 
     // Check direct subdirectory
     // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-    const subPath = join(cacheDir, entry.name, platformConfig.executable);
+    const subPath = path.join(cacheDir, entry.name, platformConfig.executable);
     try {
       await stat(subPath);
       return subPath;

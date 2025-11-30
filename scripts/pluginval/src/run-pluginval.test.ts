@@ -1,11 +1,19 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { execFileSync } from 'child_process';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { execFile } from 'child_process';
+import type { promisify as promisifyType } from 'util';
 
-vi.mock('child_process', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('child_process')>();
+const mockExecFileAsync = vi.hoisted(() => vi.fn());
+
+vi.mock('util', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('util')>();
   return {
     ...actual,
-    execFileSync: vi.fn(),
+    promisify: ((fn: unknown) => {
+      if (fn === execFile) {
+        return mockExecFileAsync;
+      }
+      return actual.promisify(fn as Parameters<typeof promisifyType>[0]);
+    }) as typeof promisifyType,
   };
 });
 
@@ -16,36 +24,36 @@ describe('runPluginval', () => {
     vi.clearAllMocks();
   });
 
-  it('should return success result for successful command', () => {
-    vi.mocked(execFileSync).mockReturnValueOnce('Validation passed\n');
+  test('should return success result for successful command', async () => {
+    mockExecFileAsync.mockResolvedValueOnce({
+      stdout: 'Validation passed\n',
+      stderr: '',
+    });
 
-    const result = runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', ['--validate']);
+    const result = await runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', ['--validate']);
 
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.output).toBe('Validation passed\n');
-    expect(execFileSync).toHaveBeenCalledWith(
+    expect(mockExecFileAsync).toHaveBeenCalledWith(
       '/path/to/pluginval',
       ['--validate', '/path/to/plugin.vst3'],
       expect.objectContaining({
         encoding: 'utf-8',
-        stdio: 'pipe',
         timeout: 120000,
       })
     );
   });
 
-  it('should return failure result with exit code for failed command', () => {
+  test('should return failure result with exit code for failed command', async () => {
     const execError = Object.assign(new Error('Command failed'), {
       stdout: 'some output',
       stderr: 'validation error',
-      status: 1,
+      code: 1,
     });
-    vi.mocked(execFileSync).mockImplementationOnce(() => {
-      throw execError;
-    });
+    mockExecFileAsync.mockRejectedValueOnce(execError);
 
-    const result = runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', []);
+    const result = await runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', []);
 
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
@@ -53,27 +61,23 @@ describe('runPluginval', () => {
     expect(result.output).toContain('validation error');
   });
 
-  it('should return failure for non-existent command', () => {
+  test('should return failure for non-existent command', async () => {
     const execError = Object.assign(new Error('ENOENT'), {
       stdout: '',
       stderr: 'command not found',
-      status: 127,
+      code: 127,
     });
-    vi.mocked(execFileSync).mockImplementationOnce(() => {
-      throw execError;
-    });
+    mockExecFileAsync.mockRejectedValueOnce(execError);
 
-    const result = runPluginval('/nonexistent/command', '/path/to/plugin.vst3', []);
+    const result = await runPluginval('/nonexistent/command', '/path/to/plugin.vst3', []);
 
     expect(result.success).toBe(false);
   });
 
-  it('should rethrow non-Error exceptions', () => {
-    vi.mocked(execFileSync).mockImplementationOnce(() => {
-      throw 'string error';
-    });
+  test('should rethrow non-Error exceptions', async () => {
+    mockExecFileAsync.mockRejectedValueOnce('string error');
 
-    expect(() => runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', [])).toThrow(
+    await expect(runPluginval('/path/to/pluginval', '/path/to/plugin.vst3', [])).rejects.toThrow(
       'string error'
     );
   });
