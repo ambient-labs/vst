@@ -591,31 +591,6 @@ thresholds: {
 }
 ```
 
-### Manifest-Driven UI
-
-Plugin parameters are defined in `manifest.json`, not hardcoded in components.
-
-```json
-// packages/frontend/public/manifest.json
-{
-  "window": { "width": 753, "height": 373 },
-  "parameters": [
-    { "paramId": "decay", "name": "Volume", "min": 0.0, "max": 1.0, "defaultValue": 0.5 }
-  ]
-}
-```
-
-Components map over the manifest to generate UI dynamically.
-
-```javascript
-// ✅ Correct (packages/frontend/src/Interface.jsx:17-27)
-import manifest from '../public/manifest.json';
-
-const params = manifest.parameters.map(({paramId, name}) => {
-  return { paramId, name, value: props[paramId] || 0, ... };
-});
-```
-
 ### Import Conventions (Additional Details)
 
 **Import order:**
