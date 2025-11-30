@@ -4,11 +4,11 @@
 import { spawn, ChildProcess } from 'node:child_process';
 import { discoverLinkedIssues, IssueFetcher } from './issues.js';
 import { createWebhookServer, startServer, stopServer } from './server.js';
-import { MonitorEvent } from './events.js';
+import type { MonitorEvent } from './types.js';
 
 export { parseIssueLinks, discoverLinkedIssues } from './issues.js';
-export { parseWebhookEvent } from './events.js';
-export type { MonitorEvent, CIEvent, ReviewEvent, CommentEvent } from './events.js';
+export { parseWebhookEvent } from './events/index.js';
+export type { MonitorEvent, CIEvent, ReviewEvent, CommentEvent } from './types.js';
 export { createWebhookServer, startServer, stopServer, verifySignature } from './server.js';
 
 /**

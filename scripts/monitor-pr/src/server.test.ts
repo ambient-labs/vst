@@ -6,7 +6,7 @@ import {
   startServer,
   stopServer,
 } from './server.js';
-import type { MonitorEvent } from './events.js';
+import type { MonitorEvent } from './types.js';
 import type { Server } from 'node:http';
 
 describe('verifySignature', () => {

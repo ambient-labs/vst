@@ -3,7 +3,8 @@
 
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { parseWebhookEvent, MonitorEvent } from './events.js';
+import { parseWebhookEvent } from './events/index.js';
+import type { MonitorEvent } from './types.js';
 
 /**
  * Options for creating the webhook server

@@ -6,7 +6,7 @@ import {
   parseReviewComment,
   parseIssueComment,
   parseWebhookEvent,
-} from './events.js';
+} from './events/index.js';
 
 describe('parseCheckRun', () => {
   const basePayload = {
