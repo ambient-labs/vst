@@ -8,7 +8,8 @@ import type { MonitorEvent } from './types.js';
 
 export { parseIssueLinks, discoverLinkedIssues } from './issues.js';
 export { parseWebhookEvent } from './events/index.js';
-export type { MonitorEvent, CIEvent, ReviewEvent, CommentEvent } from './types.js';
+export type { MonitorEvent, CIEvent, ReviewEvent, CommentEvent, EventType, EventPayloadMap } from './types.js';
+export { isEventType, eventTypes } from './types.js';
 export { createWebhookServer, startServer, stopServer, verifySignature } from './server.js';
 
 /**
