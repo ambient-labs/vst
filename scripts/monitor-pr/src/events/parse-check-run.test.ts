@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { parseCheckRun } from './parse-check-run.js';
 
-describe('parseCheckRun', () => {
-  const basePayload = {
-    action: 'completed',
-    check_run: {
-      name: 'test',
-      status: 'completed',
-      conclusion: 'success',
-      pull_requests: [{ number: 42 }],
-    },
-  };
+const basePayload = {
+  action: 'completed',
+  check_run: {
+    name: 'test',
+    status: 'completed',
+    conclusion: 'success',
+    pull_requests: [{ number: 42 }],
+  },
+};
 
+describe('parseCheckRun', () => {
   it('should parse check_run for matching PR', () => {
     const result = parseCheckRun(basePayload, 42, new Set());
     expect(result).toEqual({
