@@ -1,61 +1,9 @@
-// HTTP webhook server for monitor-pr
-// Receives GitHub webhook POSTs, verifies signatures, emits events
+// HTTP webhook server creation
 
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { parseWebhookEvent } from './events/index.js';
-import type { MonitorEvent } from './types.js';
-
-/**
- * Options for creating the webhook server
- */
-export interface WebhookServerOptions {
-  /** Target PR number to filter events for */
-  targetPR: number;
-  /** Set of linked issue numbers to also monitor */
-  linkedIssues: Set<number>;
-  /** Webhook secret for signature verification (optional but recommended) */
-  secret?: string;
-  /** Callback for each parsed event */
-  onEvent: (event: MonitorEvent) => void;
-  /** Callback for errors (optional) */
-  onError?: (error: Error) => void;
-}
-
-/**
- * Verify GitHub webhook signature using HMAC-SHA256.
- * Returns true if signature is valid, false otherwise.
- */
-export function verifySignature(
-  payload: string,
-  signature: string | undefined,
-  secret: string
-): boolean {
-  if (!signature) {
-    return false;
-  }
-
-  // GitHub sends signature as "sha256=<hex>"
-  const parts = signature.split('=');
-  if (parts.length !== 2 || parts[0] !== 'sha256') {
-    return false;
-  }
-
-  const receivedSig = parts[1];
-  const expectedSig = createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-
-  // Use timing-safe comparison to prevent timing attacks
-  try {
-    return timingSafeEqual(
-      Buffer.from(receivedSig, 'hex'),
-      Buffer.from(expectedSig, 'hex')
-    );
-  } catch {
-    return false;
-  }
-}
+import { parseWebhookEvent } from '../events/index.js';
+import type { WebhookServerOptions } from '../types.js';
+import { verifySignature } from './verify-signature.js';
 
 /**
  * Read full request body as a string
@@ -137,37 +85,4 @@ export function createWebhookServer(options: WebhookServerOptions): Server {
   });
 
   return server;
-}
-
-/**
- * Start the server on a random available port.
- * Returns a promise that resolves with the assigned port.
- */
-export function startServer(server: Server): Promise<number> {
-  return new Promise((resolve, reject) => {
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      if (addr && typeof addr === 'object') {
-        resolve(addr.port);
-      } else {
-        reject(new Error('Failed to get server address'));
-      }
-    });
-  });
-}
-
-/**
- * Gracefully stop the server
- */
-export function stopServer(server: Server): Promise<void> {
-  return new Promise((resolve, reject) => {
-    server.close((err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
 }

@@ -1,139 +1,41 @@
 // monitor-pr: Real-time GitHub PR monitoring via webhooks
 // Main module that orchestrates issue discovery, server, and webhook forwarding
 
-import { spawn, ChildProcess } from 'node:child_process';
-import { discoverLinkedIssues, IssueFetcher } from './issues.js';
-import { createWebhookServer, startServer, stopServer } from './server.js';
+import { discoverLinkedIssues } from './issues/index.js';
+import { createWebhookServer, startServer, stopServer } from './server/index.js';
+import {
+  fetchPR,
+  createGhIssueFetcher,
+  generateSecret,
+  startWebhookForward,
+} from './cli/index.js';
 import type { MonitorEvent } from './types.js';
 
-export { parseIssueLinks, discoverLinkedIssues } from './issues.js';
+// Re-export from issues module
+export { parseIssueLinks, discoverLinkedIssues } from './issues/index.js';
+
+// Re-export from events module
 export { parseWebhookEvent } from './events/index.js';
-export type { MonitorEvent, CIEvent, ReviewEvent, CommentEvent, EventType, EventPayloadMap } from './types.js';
+
+// Re-export types
+export type {
+  MonitorEvent,
+  CIEvent,
+  ReviewEvent,
+  CommentEvent,
+  EventType,
+  EventPayloadMap,
+  IssueFetcher,
+  WebhookServerOptions,
+  MonitorConfig,
+} from './types.js';
 export { isEventType, eventTypes } from './types.js';
-export { createWebhookServer, startServer, stopServer, verifySignature } from './server.js';
 
-/**
- * Configuration for the monitor-pr CLI
- */
-export interface MonitorConfig {
-  /** GitHub repository owner */
-  owner: string;
-  /** GitHub repository name */
-  repo: string;
-  /** PR number to monitor */
-  prNumber: number;
-  /** Webhook secret (generated if not provided) */
-  secret?: string;
-  /** Maximum depth for issue discovery (default: 3) */
-  maxDepth?: number;
-}
+// Re-export from server module
+export { createWebhookServer, startServer, stopServer, verifySignature } from './server/index.js';
 
-/**
- * Fetch PR details from GitHub using gh CLI
- */
-export async function fetchPR(
-  owner: string,
-  repo: string,
-  prNumber: number
-): Promise<{ body: string; state: string }> {
-  return new Promise((resolve, reject) => {
-    const child = spawn('gh', [
-      'api',
-      `repos/${owner}/${repo}/pulls/${prNumber}`,
-      '--jq', '.body, .state'
-    ]);
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    child.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
-
-    child.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Failed to fetch PR: ${stderr}`));
-      } else {
-        const lines = stdout.trim().split('\n');
-        // jq outputs body on first line(s), state on last line
-        const state = lines.pop() || 'unknown';
-        const body = lines.join('\n');
-        resolve({ body, state });
-      }
-    });
-  });
-}
-
-/**
- * Create an issue fetcher that uses gh CLI
- */
-export function createGhIssueFetcher(): IssueFetcher {
-  return async (owner: string, repo: string, issueNumber: number): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const child = spawn('gh', [
-        'api',
-        `repos/${owner}/${repo}/issues/${issueNumber}`,
-        '--jq', '.body'
-      ]);
-
-      let stdout = '';
-
-      child.stdout.on('data', (data: Buffer) => {
-        stdout += data.toString();
-      });
-
-      child.on('close', (code) => {
-        if (code !== 0) {
-          resolve(null);
-        } else {
-          resolve(stdout.trim() || null);
-        }
-      });
-    });
-  };
-}
-
-/**
- * Generate a random webhook secret
- */
-export function generateSecret(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-/**
- * Start gh webhook forward subprocess
- */
-export function startWebhookForward(
-  owner: string,
-  repo: string,
-  port: number,
-  secret: string,
-  events: string[]
-): ChildProcess {
-  const args = [
-    'webhook',
-    'forward',
-    '--repo', `${owner}/${repo}`,
-    '--events', events.join(','),
-    '--url', `http://127.0.0.1:${port}/`,
-    '--secret', secret,
-  ];
-
-  const child = spawn('gh', args, {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  return child;
-}
+// Re-export CLI utilities
+export { fetchPR, createGhIssueFetcher, generateSecret, startWebhookForward } from './cli/index.js';
 
 /**
  * Main entry point for monitor-pr CLI

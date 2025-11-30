@@ -1,59 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'node:crypto';
-import {
-  verifySignature,
-  createWebhookServer,
-  startServer,
-  stopServer,
-} from './server.js';
-import type { MonitorEvent } from './types.js';
+import { createWebhookServer } from './create-webhook-server.js';
+import { startServer, stopServer } from './start-server.js';
+import type { MonitorEvent } from '../types.js';
 import type { Server } from 'node:http';
 
-describe('verifySignature', () => {
-  const secret = 'test-secret';
-  const payload = '{"test": "data"}';
+const secret = 'test-secret';
+const targetPR = 42;
+const linkedIssues = new Set([10, 20]);
 
-  function createSignature(body: string, key: string): string {
-    const sig = createHmac('sha256', key).update(body).digest('hex');
-    return `sha256=${sig}`;
-  }
-
-  it('should return true for valid signature', () => {
-    const signature = createSignature(payload, secret);
-    expect(verifySignature(payload, signature, secret)).toBe(true);
-  });
-
-  it('should return false for invalid signature', () => {
-    const signature = createSignature(payload, 'wrong-secret');
-    expect(verifySignature(payload, signature, secret)).toBe(false);
-  });
-
-  it('should return false for missing signature', () => {
-    expect(verifySignature(payload, undefined, secret)).toBe(false);
-  });
-
-  it('should return false for malformed signature', () => {
-    expect(verifySignature(payload, 'invalid', secret)).toBe(false);
-    expect(verifySignature(payload, 'md5=abc', secret)).toBe(false);
-    expect(verifySignature(payload, 'sha256=', secret)).toBe(false);
-  });
-
-  it('should return false for invalid hex in signature', () => {
-    expect(verifySignature(payload, 'sha256=notvalidhex!@#', secret)).toBe(false);
-  });
-});
+function createSignature(body: string): string {
+  const sig = createHmac('sha256', secret).update(body).digest('hex');
+  return `sha256=${sig}`;
+}
 
 describe('createWebhookServer', () => {
   let server: Server;
   let port: number;
-  const secret = 'test-secret';
-  const targetPR = 42;
-  const linkedIssues = new Set([10, 20]);
-
-  function createSignature(body: string): string {
-    const sig = createHmac('sha256', secret).update(body).digest('hex');
-    return `sha256=${sig}`;
-  }
 
   async function sendRequest(
     body: string,
@@ -67,7 +30,7 @@ describe('createWebhookServer', () => {
       },
       body,
     });
-    const responseBody = await response.json() as object;
+    const responseBody = (await response.json()) as object;
     return { status: response.status, body: responseBody };
   }
 
@@ -154,9 +117,8 @@ describe('createWebhookServer event emission', () => {
   let server: Server;
   let port: number;
   let events: MonitorEvent[];
-  const secret = 'test-secret';
 
-  function createSignature(body: string): string {
+  function createSig(body: string): string {
     const sig = createHmac('sha256', secret).update(body).digest('hex');
     return `sha256=${sig}`;
   }
@@ -193,7 +155,7 @@ describe('createWebhookServer event emission', () => {
       headers: {
         'Content-Type': 'application/json',
         'X-GitHub-Event': 'check_run',
-        'X-Hub-Signature-256': createSignature(body),
+        'X-Hub-Signature-256': createSig(body),
       },
       body,
     });
@@ -223,7 +185,7 @@ describe('createWebhookServer event emission', () => {
       headers: {
         'Content-Type': 'application/json',
         'X-GitHub-Event': 'pull_request_review',
-        'X-Hub-Signature-256': createSignature(body),
+        'X-Hub-Signature-256': createSig(body),
       },
       body,
     });
@@ -253,7 +215,7 @@ describe('createWebhookServer event emission', () => {
       headers: {
         'Content-Type': 'application/json',
         'X-GitHub-Event': 'issue_comment',
-        'X-Hub-Signature-256': createSignature(body),
+        'X-Hub-Signature-256': createSig(body),
       },
       body,
     });
@@ -284,7 +246,7 @@ describe('createWebhookServer event emission', () => {
       headers: {
         'Content-Type': 'application/json',
         'X-GitHub-Event': 'check_run',
-        'X-Hub-Signature-256': createSignature(body),
+        'X-Hub-Signature-256': createSig(body),
       },
       body,
     });
@@ -337,37 +299,5 @@ describe('server without secret', () => {
 
     expect(response.status).toBe(200);
     expect(events).toHaveLength(1);
-  });
-});
-
-describe('startServer and stopServer', () => {
-  it('should start on random available port', async () => {
-    const server = createWebhookServer({
-      targetPR: 1,
-      linkedIssues: new Set(),
-      onEvent: vi.fn(),
-    });
-
-    const port = await startServer(server);
-    expect(port).toBeGreaterThan(0);
-    expect(port).toBeLessThan(65536);
-
-    await stopServer(server);
-  });
-
-  it('should stop server cleanly', async () => {
-    const server = createWebhookServer({
-      targetPR: 1,
-      linkedIssues: new Set(),
-      onEvent: vi.fn(),
-    });
-
-    const port = await startServer(server);
-    await stopServer(server);
-
-    // Server should no longer accept connections
-    await expect(
-      globalThis.fetch(`http://127.0.0.1:${port}/`)
-    ).rejects.toThrow();
   });
 });
