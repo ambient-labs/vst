@@ -10,10 +10,11 @@
 #   1 - One or more checks failed (commit blocked)
 #
 # Environment variables:
-#   RUN_SLOW_CHECKS=1 - Run slow checks (Semgrep, native build) locally
+#   SKIP_SEMGREP=1    - Skip Semgrep security scan (not recommended)
+#   RUN_NATIVE_BUILD=1 - Run native build locally (slow, ~2min)
 #
-# By default, slow checks (>30s) are skipped locally and run only in CI.
-# Set RUN_SLOW_CHECKS=1 to run them locally.
+# Semgrep runs by default on code changes (requires Docker).
+# Native build is skipped by default and runs only in CI.
 
 set -e
 
@@ -144,30 +145,27 @@ if [[ -n "$STAGED_DSP" ]] || [[ -n "$STAGED_TESTS" ]] || [[ -n "$STAGED_DEPS" ]]
   PIDS="$PIDS $!"
 fi
 
-# Slow checks (Semgrep, native build) - skipped by default, run in CI
-if [[ "${RUN_SLOW_CHECKS:-}" == "1" ]]; then
-  # Semgrep security scan (if code files changed)
-  if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
-    if command -v docker &> /dev/null; then
-      run_check "semgrep" "pnpm run semgrep" &
-      PIDS="$PIDS $!"
-    else
-      echo "⚠ Skipping Semgrep (Docker not available)"
-    fi
+# Semgrep security scan (if code files changed) - runs by default
+# Skip with SKIP_SEMGREP=1 if needed
+if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
+  if [[ "${SKIP_SEMGREP:-}" == "1" ]]; then
+    echo "⚠ Skipping Semgrep (SKIP_SEMGREP=1)"
+  elif command -v docker &> /dev/null; then
+    run_check "semgrep" "pnpm run semgrep" &
+    PIDS="$PIDS $!"
+  else
+    echo "⚠ Skipping Semgrep (Docker not available)"
   fi
+fi
 
-  # Native build (if native code or deps changed)
-  if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
+# Native build - skipped by default (slow), runs in CI
+# Enable with RUN_NATIVE_BUILD=1
+if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
+  if [[ "${RUN_NATIVE_BUILD:-}" == "1" ]]; then
     run_check "native-build" "pnpm run build-native" &
     PIDS="$PIDS $!"
-  fi
-else
-  # Note which slow checks are being skipped
-  if [[ -n "$STAGED_CODE" ]] || [[ -n "$STAGED_CPP" ]]; then
-    echo "⚠ Skipping Semgrep (slow, runs in CI; use RUN_SLOW_CHECKS=1 to run locally)"
-  fi
-  if [[ -n "$STAGED_NATIVE" ]] || [[ -n "$STAGED_DEPS" ]]; then
-    echo "⚠ Skipping native build (slow, runs in CI; use RUN_SLOW_CHECKS=1 to run locally)"
+  else
+    echo "⚠ Skipping native build (slow, runs in CI; use RUN_NATIVE_BUILD=1 to run locally)"
   fi
 fi
 

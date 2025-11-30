@@ -76,6 +76,13 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        // Node.js 18+ globals
+        fetch: 'readonly',
+        Response: 'readonly',
+        TextEncoder: 'readonly',
+        ReadableStream: 'readonly',
+        // TypeScript Node.js namespace
+        NodeJS: 'readonly',
       },
     },
   },

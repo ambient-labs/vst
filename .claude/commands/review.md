@@ -75,14 +75,39 @@ For each comment:
 5. Mark the todo as `completed`
 6. Move to the next comment
 
-### Phase 5: Summary
+### Phase 5: Commit and Push
 
 After addressing all comments:
 
 1. Show a summary of changes made
 2. Run relevant tests/lints
 3. Commit with a message referencing the PR
-4. Push and monitor CI
+4. Push to the branch
+
+### Phase 6: Re-check for New Comments (CRITICAL)
+
+**IMPORTANT**: After pushing, ALWAYS re-fetch comments before declaring done.
+
+```bash
+# Re-fetch both endpoints
+gh api repos/ambient-labs/vst/pulls/<PR>/reviews
+gh api repos/ambient-labs/vst/pulls/<PR>/comments
+```
+
+**Why this matters**: Reviewers may add new comments while you're working on the first batch. You MUST check for new comments after each push.
+
+**Loop until done**:
+1. If new comments found → go back to Phase 3 and address them
+2. If no new comments AND CI passes → done
+3. Never declare "ready for review" without re-checking
+
+### Phase 7: Monitor CI
+
+Only after confirming no new comments:
+
+1. Wait for CI to pass
+2. If CI fails, fix and push
+3. After fixing CI, re-check for comments again (go to Phase 6)
 
 ## Error Handling
 

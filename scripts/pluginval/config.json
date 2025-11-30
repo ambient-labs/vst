@@ -1,0 +1,22 @@
+{
+  "version": "v1.0.3",
+  "cacheDir": "node_modules/.cache/pluginval",
+  "pluginName": "SRVB",
+  "platforms": {
+    "darwin": {
+      "downloadUrl": "https://github.com/Tracktion/pluginval/releases/download/v1.0.3/pluginval_macOS.zip",
+      "executable": "pluginval",
+      "isAppBundle": true
+    },
+    "linux": {
+      "downloadUrl": "https://github.com/Tracktion/pluginval/releases/download/v1.0.3/pluginval_Linux.zip",
+      "executable": "pluginval",
+      "isAppBundle": false
+    },
+    "win32": {
+      "downloadUrl": "https://github.com/Tracktion/pluginval/releases/download/v1.0.3/pluginval_Windows.zip",
+      "executable": "pluginval.exe",
+      "isAppBundle": false
+    }
+  }
+}
