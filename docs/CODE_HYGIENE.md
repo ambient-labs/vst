@@ -369,3 +369,399 @@ Semgrep requires Docker. If Docker is not available, the pre-commit hook will sk
 | `semgrep` | Run Semgrep security analysis (requires Docker) |
 | `prepare` | Install git hooks |
 | `clean` | Remove build artifacts |
+
+---
+
+## Codebase Patterns & Idioms
+
+This section documents the specific patterns and conventions established in this codebase. Follow these to maintain consistency.
+
+### React Component Patterns
+
+**Function declarations over arrow functions:**
+Components use `function` declarations, not arrow functions. This applies to all components, hooks callbacks, and handlers.
+
+```javascript
+// ✅ Correct
+export default function Interface(props) { ... }
+function Knob(props) { ... }
+
+// ❌ Avoid
+const Interface = (props) => { ... }
+const Knob = (props) => { ... }
+```
+
+**Named function expressions in hooks:**
+Use named `function` expressions in `useEffect` and other hooks, not arrow functions.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Knob.jsx:61-78)
+useEffect(function() {
+  const canvas = canvasRef.current;
+  observerRef.current = new ResizeObserver(function(entries) {
+    for (const entry of entries) {
+      setBounds({ ... });
+    }
+  });
+  return function() {
+    observerRef.current.disconnect();
+  };
+}, []);
+
+// ❌ Avoid
+useEffect(() => {
+  // ...
+  return () => { ... };
+}, []);
+```
+
+**Props destructuring in function body:**
+Destructure props inside the function body, not in the signature.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Knob.jsx:58)
+function Knob(props) {
+  const {className, meterColor, knobColor, thumbColor, ...other} = props;
+  // ...
+}
+
+// ❌ Avoid
+function Knob({className, meterColor, ...other}) {
+  // ...
+}
+```
+
+**Custom `cx` utility for class names:**
+Use the inline `cx` utility for conditional class concatenation (not the `classnames` library).
+
+```javascript
+// ✅ Correct - inline utility (packages/frontend/src/Knob.jsx:7-9)
+function cx(...classes) {
+  return classes.filter(Boolean).join(' ')
+}
+
+const classes = cx(className, 'relative touch-none');
+
+// ❌ Avoid
+import cx from 'classnames';
+```
+
+**Props spreading with rest parameters:**
+Pass through unhandled props using rest spreading.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Knob.jsx:91)
+const {className, meterColor, knobColor, thumbColor, ...other} = props;
+return <DragBehavior className={classes} {...other}>
+```
+
+### State Management (Zustand)
+
+**Vanilla store + React hooks wrapper:**
+Create vanilla stores first, then wrap with React hooks. This allows access both inside and outside React components.
+
+```javascript
+// ✅ Correct pattern (packages/frontend/src/main.jsx:12-20)
+import createHooks from 'zustand'
+import createStore from 'zustand/vanilla'
+
+const store = createStore(() => ({}));
+const useStore = createHooks(store);
+
+const errorStore = createStore(() => ({ error: null }));
+const useErrorStore = createHooks(errorStore);
+```
+
+**Functional setState with previous state:**
+Use callback form when updating state based on previous values.
+
+```javascript
+// ✅ Correct (packages/frontend/src/main.jsx:40-42)
+logStore.setState((state) => ({
+  logs: [...(state.logs || []).slice(-99), { timestamp, level, message }]
+}));
+```
+
+### Native Interop Patterns
+
+**globalThis for bidirectional communication:**
+Register callbacks on `globalThis` for native code to call.
+
+```javascript
+// ✅ Correct (packages/frontend/src/main.jsx:80-86)
+globalThis.__receiveStateChange__ = function(state) {
+  store.setState(JSON.parse(state));
+};
+
+globalThis.__receiveError__ = (err) => {
+  errorStore.setState({ error: err });
+};
+```
+
+**Defensive typeof checks:**
+Always check if native functions exist before calling them.
+
+```javascript
+// ✅ Correct (packages/frontend/src/main.jsx:56-61)
+if (typeof globalThis.__postNativeMessage__ === 'function') {
+  globalThis.__postNativeMessage__("setParameterValue", { paramId, value });
+}
+```
+
+### DSP Patterns
+
+**shouldRender optimization:**
+Use a decision function to determine when full re-renders are needed vs. ref updates.
+
+```javascript
+// ✅ Correct (packages/dsp/main.js:22-24)
+function shouldRender(prev, nextState) {
+  return (prev === null) || (prev.sampleRate !== nextState.sampleRate);
+}
+
+// In callback:
+if (shouldRender(prevState, state)) {
+  core.render(...);  // Full render
+} else {
+  refs.update('decay', { value: state.decay });  // Just update refs
+}
+```
+
+**RefMap for lazy ref creation:**
+Use the RefMap pattern to lazily create and cache Elementary refs.
+
+```javascript
+// ✅ Correct (packages/dsp/RefMap.js)
+export class RefMap {
+  getOrCreate(name, type, props, children) {
+    if (!this._map.has(name)) {
+      const ref = this._core.createRef(type, props, children);
+      this._map.set(name, ref);
+    }
+    return this._map.get(name)[0];  // Return getter
+  }
+
+  update(name, props) {
+    const [, setter] = this._map.get(name);  // Get setter
+    setter(props);
+  }
+}
+```
+
+**invariant for defensive assertions:**
+Use the `invariant` library for runtime type checks and assertions.
+
+```javascript
+// ✅ Correct (packages/dsp/srvb.js:5)
+import invariant from 'invariant';
+invariant(typeof props === 'object', 'Unexpected props object');
+```
+
+### Canvas & UI Patterns
+
+**Double-resolution canvas:**
+Render canvas at 2x CSS size for crisp display on retina screens.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Knob.jsx:66-69)
+observerRef.current = new ResizeObserver(function(entries) {
+  for (const entry of entries) {
+    setBounds({
+      width: 2 * entry.contentRect.width,
+      height: 2 * entry.contentRect.height,
+    });
+  }
+});
+```
+
+**ResizeObserver with polyfill:**
+Use the `resize-observer-polyfill` for cross-browser support.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Knob.jsx:2)
+import ResizeObserver from 'resize-observer-polyfill';
+```
+
+**Value clamping pattern:**
+Clamp values to 0-1 range using `Math.max(0, Math.min(1, value))`.
+
+```javascript
+// ✅ Correct (packages/frontend/src/DragBehavior.jsx:22, 25, 36)
+onChange(Math.max(0, Math.min(1, dv)));
+```
+
+### Testing Patterns
+
+**Named constants for magic numbers:**
+Extract test configuration values as constants at the top of describe blocks.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:6-10)
+const SAMPLE_RATE = 44100;
+const BLOCK_SIZE = 512;
+const SMOOTHING_SETTLE_BLOCKS = 20;
+const AMPLITUDE_TOLERANCE = 1;
+const SILENCE_THRESHOLD = 0.000001;
+```
+
+**Smoothing verification with block loops:**
+Test audio smoothing by processing multiple blocks in a loop.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:76-81)
+for (let i = 0; i < SMOOTHING_SETTLE_BLOCKS; i++) {
+  core.process([inputLeft, inputRight], [outputLeft, outputRight]);
+}
+```
+
+**Amplitude calculation with reduce:**
+Use `reduce` to calculate average amplitude across a block.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:84-85)
+const avgLeft = outputLeft.reduce((sum, val) => sum + Math.abs(val), 0) / BLOCK_SIZE;
+```
+
+**toBeCloseTo for floating-point:**
+Use `toBeCloseTo` with tolerance for amplitude comparisons.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:90)
+expect(avgLeft).toBeCloseTo(expectedAmplitude, AMPLITUDE_TOLERANCE);
+```
+
+### Configuration Patterns
+
+**Test environment by package:**
+- Frontend tests: `environment: 'jsdom'`
+- DSP tests: `environment: 'node'`
+- Integration tests: `environment: 'node'`, `testTimeout: 60000`
+
+**Per-file coverage thresholds:**
+Coverage is enforced per-file, not just overall.
+
+```typescript
+// ✅ Correct (vitest.unit.config.ts)
+thresholds: {
+  perFile: true,  // Each file must meet threshold
+  statements: 95,
+  branches: 95,
+  functions: 95,
+  lines: 95,
+}
+```
+
+### Manifest-Driven UI
+
+Plugin parameters are defined in `manifest.json`, not hardcoded in components.
+
+```json
+// packages/frontend/public/manifest.json
+{
+  "window": { "width": 753, "height": 373 },
+  "parameters": [
+    { "paramId": "decay", "name": "Volume", "min": 0.0, "max": 1.0, "defaultValue": 0.5 }
+  ]
+}
+```
+
+Components map over the manifest to generate UI dynamically.
+
+```javascript
+// ✅ Correct (packages/frontend/src/Interface.jsx:17-27)
+import manifest from '../public/manifest.json';
+
+const params = manifest.parameters.map(({paramId, name}) => {
+  return { paramId, name, value: props[paramId] || 0, ... };
+});
+```
+
+### Import Conventions (Additional Details)
+
+**Import order:**
+1. React and React hooks
+2. External libraries
+3. Local components/modules
+4. CSS imports
+
+```javascript
+// ✅ Correct order (packages/frontend/src/main.jsx)
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import Interface from './Interface.jsx'
+
+import createHooks from 'zustand'
+import createStore from 'zustand/vanilla'
+
+import './index.css'
+```
+
+**JSX imports with extension:**
+Include `.jsx` extension for JSX component imports (matches ESM convention).
+
+```javascript
+// ✅ Correct
+import Interface from './Interface.jsx';
+import Knob from './Knob.jsx';
+```
+
+### Console Override Pattern
+
+Override console methods to capture logs with timestamps while preserving original behavior.
+
+```javascript
+// ✅ Correct pattern (packages/frontend/src/main.jsx:22-52)
+const originalConsoleLog = console.log;
+
+function addLog(level, ...args) {
+  const timestamp = new Date().toLocaleTimeString();
+  const message = args.map(arg => {
+    if (typeof arg === 'object') {
+      try { return JSON.stringify(arg, null, 2); }
+      catch (e) { return String(arg); }
+    }
+    return String(arg);
+  }).join(' ');
+
+  logStore.setState((state) => ({
+    logs: [...(state.logs || []).slice(-99), { timestamp, level, message }]
+  }));
+
+  originalConsoleLog(...args);  // Still call original
+}
+
+console.log = (...args) => addLog('log', ...args);
+```
+
+### Custom Vite Plugin for HMR
+
+Create custom Vite plugins for specialized hot reload behavior.
+
+```javascript
+// ✅ Correct pattern (packages/frontend/vite.config.js:17-31)
+function pubDirReloadPlugin() {
+  return {
+    name: 'pubDirReload',
+    handleHotUpdate({file, modules, server}) {
+      if (file.includes('dsp.main.js')) {
+        server.ws.send({
+          type: 'custom',
+          event: 'reload-dsp',
+        });
+      }
+      return modules;
+    }
+  };
+}
+```
+
+Catch custom HMR events in client code:
+
+```javascript
+// packages/frontend/src/main.jsx:71-77
+if (process.env.NODE_ENV !== 'production') {
+  import.meta.hot.on('reload-dsp', () => {
+    globalThis.__postNativeMessage__('reload');
+  });
+}
+```
