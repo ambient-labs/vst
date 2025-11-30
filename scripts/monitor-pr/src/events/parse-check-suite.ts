@@ -1,7 +1,6 @@
 // Parse check_suite webhook payloads
 
 import type { CheckSuitePayload, CIEvent } from '../types.js';
-import { normalizeStatus, normalizeConclusion } from './normalize.js';
 
 /**
  * Parse a check_suite webhook payload into a CI event.
@@ -17,10 +16,13 @@ export function parseCheckSuite(
     return null;
   }
 
+  const status = payload.check_suite.status.toLowerCase() as CIEvent['status'];
+  const conclusion = payload.check_suite.conclusion?.toLowerCase() as CIEvent['conclusion'] ?? null;
+
   return {
     event: 'ci',
     check: 'check_suite',
-    status: normalizeStatus(payload.check_suite.status),
-    conclusion: normalizeConclusion(payload.check_suite.conclusion),
+    status,
+    conclusion,
   };
 }

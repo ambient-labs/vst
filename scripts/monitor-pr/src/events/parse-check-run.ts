@@ -1,7 +1,6 @@
 // Parse check_run webhook payloads
 
 import type { CheckRunPayload, CIEvent } from '../types.js';
-import { normalizeStatus, normalizeConclusion } from './normalize.js';
 
 /**
  * Parse a check_run webhook payload into a CI event.
@@ -17,10 +16,13 @@ export function parseCheckRun(
     return null;
   }
 
+  const status = payload.check_run.status.toLowerCase() as CIEvent['status'];
+  const conclusion = payload.check_run.conclusion?.toLowerCase() as CIEvent['conclusion'] ?? null;
+
   return {
     event: 'ci',
     check: payload.check_run.name,
-    status: normalizeStatus(payload.check_run.status),
-    conclusion: normalizeConclusion(payload.check_run.conclusion),
+    status,
+    conclusion,
   };
 }
