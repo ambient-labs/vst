@@ -48,8 +48,7 @@ export const setup = async (options: SetupOptions): Promise<SetupResult> => {
   }
 
   logger.log(`Downloading from ${platformConfig.downloadUrl}...`);
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-  const zipPath = path.join(cacheDir, 'pluginval.zip');
+  const zipPath = path.join(cacheDir, 'pluginval.zip'); // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
 
   try {
     await downloadFile(platformConfig.downloadUrl, zipPath);
