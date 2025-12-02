@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { execFile } from 'child_process';
 import type { promisify as promisifyType } from 'util';
 
@@ -20,10 +20,6 @@ vi.mock('util', async (importOriginal) => {
 import { runPluginval } from './run-pluginval.js';
 
 describe('runPluginval', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   test('should return success result for successful command', async () => {
     mockExecFileAsync.mockResolvedValueOnce({
       stdout: 'Validation passed\n',
