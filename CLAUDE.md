@@ -327,7 +327,13 @@ gh api repos/ambient-labs/vst/pulls/<PR>/comments
 2. List ALL comments found for user confirmation
 3. Create todo items for each comment
 4. Address each comment systematically
-5. Commit, push, and monitor CI
+5. Commit and push
+6. **Re-fetch both endpoints** to check for new comments added while working
+7. If new comments found, go back to step 3
+8. Only after no new comments, monitor CI
+9. If CI fails and you fix it, re-check for comments again
+
+**CRITICAL**: Always re-check for new comments after pushing. Reviewers may add feedback while you're working on the first batch. Never declare "done" without re-fetching.
 
 See `/review` command for the full workflow.
 
@@ -406,8 +412,26 @@ This section documents the coding patterns and conventions used throughout this 
 - `pnpm run test:unit` - Run unit tests only (`src/**/*.test.ts`)
 - `pnpm run test:integration` - Run integration tests only (`tests/**/*.test.ts`)
 
+**Test config naming:**
+- Unit test configs: `vitest.unit.config.ts`
+- Integration test configs: `vitest.integration.config.ts`
+- Always explicitly specify the config file in package.json scripts:
+  ```json
+  "test": "vitest run --config vitest.unit.config.ts"
+  ```
+
 **Test structure:**
-- Use vitest's `describe`/`it`/`expect` pattern
+- Use vitest's `describe`/`test`/`expect` pattern
+- **Use `test` instead of `it`** - prefer explicit `test()` over `it()`
+- Use `test.each` for parameterized tests:
+  ```typescript
+  test.each([
+    { input: 'a', expected: 'A', description: 'lowercase' },
+    { input: 'B', expected: 'B', description: 'uppercase' },
+  ])('converts $description correctly', ({ input, expected }) => {
+    expect(convert(input)).toBe(expected);
+  });
+  ```
 - Extract magic numbers into named constants at file top
   ```typescript
   const SAMPLE_RATE = 44100;
@@ -416,27 +440,36 @@ This section documents the coding patterns and conventions used throughout this 
   ```
 - Use behavior-focused test descriptions
   ```typescript
-  it('should produce complete silence at 0% volume', async () => { ... });
+  test('should produce complete silence at 0% volume', async () => { ... });
   ```
 
 **Mocking with vitest:**
-- Import both the module (for use in tests) and a type-only namespace (for type assertion in mocks):
+- Import the actual function - when mocked, it automatically refers to the mock:
   ```typescript
-  import { myFunction } from './my-module.js';
-  import type * as _MyModule from './my-module.js';
+  import { readFile } from 'fs/promises';
+  import type { readFile as readFileType } from 'fs/promises';
 
-  vi.mock('./my-module.js', async () => {
-    const actual = await vi.importActual('./my-module.js') as typeof _MyModule;
+  vi.mock('fs/promises', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('fs/promises')>();
     return {
       ...actual,
-      myFunction: vi.fn().mockImplementation(() => 'mocked'),
+      readFile: vi.fn(),
     };
   });
 
-  // In tests, use vi.mocked() to access mock functions
-  vi.mocked(myFunction).mockReturnValue('test value');
+  // In tests, the imported readFile IS the mock
+  vi.mocked(readFile).mockResolvedValue('content');
   ```
-- This pattern preserves types from the actual module while allowing selective mocking
+- **Always type mock imports** - use `typeof import('module')` for type safety
+- Put shared test config (like `clearAllMocks`) in `vitest.config.ts`:
+  ```typescript
+  export default defineConfig({
+    test: {
+      clearMocks: true,  // Instead of beforeEach(() => vi.clearAllMocks())
+    },
+  });
+  ```
+- Only use `vi.hoisted()` when absolutely necessary (e.g., mocking `promisify`)
 
 **Coverage requirements:**
 - Target >95% code coverage for new code
@@ -496,7 +529,7 @@ ComponentName/
 
 - **Vitest typing**: Tests use vitest types, not Jest
   ```typescript
-  import { describe, it, expect } from 'vitest';
+  import { describe, test, expect } from 'vitest';
   ```
 - **Unused variables**: Prefix with underscore to satisfy linter
   ```typescript
@@ -515,6 +548,56 @@ ComponentName/
   // Avoid
   main().catch((err) => { ... });
   ```
+
+### Async/Await Patterns
+
+- **Prefer async/await over sync functions** - use promisified versions:
+  ```typescript
+  // ❌ Avoid sync versions
+  import { execFileSync } from 'child_process';
+  const result = execFileSync(cmd, args);
+
+  // ✅ Use async versions
+  import { execFile } from 'child_process';
+  import { promisify } from 'util';
+  const execFileAsync = promisify(execFile);
+  const result = await execFileAsync(cmd, args);
+  ```
+
+- **Use try/catch instead of .catch()** for error handling:
+  ```typescript
+  // ❌ Avoid .catch() chains
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+
+  // ✅ Use try/catch
+  try {
+    await main();
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+  ```
+
+### CLI Entry Points
+
+- **Keep CLI entry points minimal** - just import and call main:
+  ```typescript
+  // cli.ts - minimal entry point
+  #!/usr/bin/env tsx
+  import { main } from './main.js';
+
+  try {
+    await main();
+  } catch (error) {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  }
+  ```
+- Put all logic in `main.ts`, not in the CLI file
+- Export `main` function for testability
 
 ## Code Quality Guidelines
 
@@ -555,7 +638,7 @@ ComponentName/
 
 ### Semgrep (Static Analysis)
 
-Semgrep runs automated security analysis on PRs via GitHub Actions.
+Semgrep runs automated security analysis on PRs via GitHub Actions and in the pre-commit hook.
 
 **Run locally (requires Docker):**
 
@@ -568,6 +651,19 @@ This uses the Semgrep Docker image to scan the codebase with the `auto` config, 
 **CI Integration:**
 
 Semgrep runs automatically on PRs that modify code files (`.ts`, `.tsx`, `.js`, `.jsx`, `.cpp`, `.h`).
+
+**Suppressing false positives:**
+
+Use inline `// nosemgrep` comments on the line **before** the flagged code:
+```typescript
+// nosemgrep
+const filePath = path.join(userDir, filename);
+```
+
+**Important:** Do NOT add entire folders to `.semgrepignore`. Use inline suppressions so the rest of the file is still scanned. Only add to `.semgrepignore` for:
+- Third-party code (submodules, vendored deps)
+- Generated files
+- Build outputs
 
 ### Documentation
 
@@ -677,14 +773,53 @@ All AI-generated code goes through the same review process as human-written code
 
 ```
 .
-├── src/              # React UI components
-├── dsp/              # Elementary audio processing code
+├── packages/
+│   ├── frontend/     # React UI components
+│   └── dsp/          # Elementary audio processing code
 ├── native/           # C++ JUCE plugin code
 │   ├── *.cpp/*.h    # Plugin source files
 │   └── CMakeLists.txt
 ├── tests/            # Integration tests
-├── scripts/          # Build scripts
+├── scripts/          # Build and utility scripts
+│   └── <name>/       # Script packages (see below)
 └── .github/          # CI/CD workflows
+```
+
+### Script Package Structure
+
+Each script in `scripts/` that has significant logic should be its own package:
+
+```
+scripts/<name>/
+├── package.json          # Own dependencies and test scripts
+├── vitest.unit.config.ts # Test configuration
+├── config.json           # Runtime configuration (if needed)
+└── src/
+    ├── cli.ts            # Minimal entry point
+    ├── main.ts           # Main logic (exported for testing)
+    ├── *.ts              # Other modules
+    └── *.test.ts         # Colocated unit tests
+```
+
+**package.json requirements:**
+```json
+{
+  "name": "<name>",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config vitest.unit.config.ts"
+  }
+}
+```
+
+**Root package.json integration:**
+```json
+{
+  "scripts": {
+    "test:scripts": "pnpm -r --filter './scripts/*' test"
+  }
+}
 ```
 
 ## Common Commands

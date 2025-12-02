@@ -1,0 +1,20 @@
+{
+  "name": "pluginval",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "setup-pluginval": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "vitest run --config vitest.unit.config.ts",
+    "test:watch": "vitest --config vitest.unit.config.ts"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "helpers": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.9"
+  }
+}
