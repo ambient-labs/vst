@@ -369,3 +369,254 @@ Semgrep requires Docker. If Docker is not available, the pre-commit hook will sk
 | `semgrep` | Run Semgrep security analysis (requires Docker) |
 | `prepare` | Install git hooks |
 | `clean` | Remove build artifacts |
+
+---
+
+## Codebase Patterns & Idioms
+
+This section documents the specific patterns and conventions for this codebase. React patterns follow modern best practices (2024-2025); TypeScript/DSP patterns follow our established conventions.
+
+### React Component Patterns
+
+**Function declarations for components:**
+Use function declarations (not arrow functions) for React components. This provides better stack traces and matches modern React conventions.
+
+```typescript
+// ✅ Correct
+export function AudioKnob({ value, onChange, className }: AudioKnobProps) {
+  // ...
+}
+
+// ❌ Avoid
+const AudioKnob = ({ value, onChange }: AudioKnobProps) => { ... }
+```
+
+**Props destructuring in signature:**
+Destructure props directly in the function signature for clarity and IDE support.
+
+```typescript
+// ✅ Correct - destructure in signature
+export function Knob({
+  value,
+  onChange,
+  className,
+  ...rest
+}: KnobProps) {
+  return <div className={className} {...rest} />;
+}
+
+// ❌ Avoid - destructure in body
+function Knob(props) {
+  const { value, onChange, className, ...rest } = props;
+}
+```
+
+**Named functions in useEffect:**
+Use named function expressions in hooks for better debugging - stack traces show the function name instead of "(anonymous)".
+
+```typescript
+// ✅ Correct - named functions
+useEffect(function syncAudioParameter() {
+  // Effect logic here
+  return function cleanupAudioParameter() {
+    // Cleanup logic
+  };
+}, [value]);
+
+// ❌ Avoid - anonymous arrows
+useEffect(() => {
+  return () => {};
+}, [value]);
+```
+
+**Use clsx for class names:**
+Use `clsx` (not `classnames`) for conditional class concatenation - it's smaller (239B vs 700B) and faster.
+
+```typescript
+// ✅ Correct
+import { clsx } from 'clsx';
+
+const classes = clsx(
+  'knob-base',
+  isDragging && 'knob-dragging',
+  className
+);
+
+// ❌ Avoid - inline utility or classnames
+function cx(...classes) { return classes.filter(Boolean).join(' ') }
+import cx from 'classnames';
+```
+
+**Props spreading with rest parameters:**
+Pass through unhandled props using rest spreading for component flexibility.
+
+```typescript
+// ✅ Correct
+export function Button({ variant, className, ...rest }: ButtonProps) {
+  return <button className={clsx(variants[variant], className)} {...rest} />;
+}
+```
+
+### Native Interop Patterns
+
+**globalThis for bidirectional communication:**
+Register callbacks on `globalThis` for native code to call.
+
+```javascript
+// ✅ Correct (packages/frontend/src/main.jsx:80-86)
+globalThis.__receiveStateChange__ = function(state) {
+  store.setState(JSON.parse(state));
+};
+```
+
+**Defensive typeof checks:**
+Always check if native functions exist before calling them.
+
+```javascript
+// ✅ Correct (packages/frontend/src/main.jsx:56-61)
+if (typeof globalThis.__postNativeMessage__ === 'function') {
+  globalThis.__postNativeMessage__("setParameterValue", { paramId, value });
+}
+```
+
+### DSP/TypeScript Patterns
+
+These patterns are specific to this codebase and must be followed exactly.
+
+**shouldRender optimization:**
+Use a decision function to determine when full re-renders are needed vs. ref updates.
+
+```javascript
+// ✅ Correct (packages/dsp/main.js:22-24)
+function shouldRender(prev, nextState) {
+  return (prev === null) || (prev.sampleRate !== nextState.sampleRate);
+}
+
+// In callback:
+if (shouldRender(prevState, state)) {
+  core.render(...);  // Full render
+} else {
+  refs.update('decay', { value: state.decay });  // Just update refs
+}
+```
+
+**RefMap for lazy ref creation:**
+Use the RefMap pattern to lazily create and cache Elementary refs.
+
+```javascript
+// ✅ Correct (packages/dsp/RefMap.js)
+export class RefMap {
+  getOrCreate(name, type, props, children) {
+    if (!this._map.has(name)) {
+      const ref = this._core.createRef(type, props, children);
+      this._map.set(name, ref);
+    }
+    return this._map.get(name)[0];  // Return getter
+  }
+
+  update(name, props) {
+    const [, setter] = this._map.get(name);  // Get setter
+    setter(props);
+  }
+}
+```
+
+**invariant for defensive assertions:**
+Use the `invariant` library for runtime type checks and assertions.
+
+```javascript
+// ✅ Correct (packages/dsp/srvb.js:5)
+import invariant from 'invariant';
+invariant(typeof props === 'object', 'Unexpected props object');
+```
+
+### Testing Patterns
+
+**Named constants for magic numbers:**
+Extract test configuration values as constants at the top of describe blocks.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:6-10)
+const SAMPLE_RATE = 44100;
+const BLOCK_SIZE = 512;
+const SMOOTHING_SETTLE_BLOCKS = 20;
+const AMPLITUDE_TOLERANCE = 1;
+const SILENCE_THRESHOLD = 0.000001;
+```
+
+**Smoothing verification with block loops:**
+Test audio smoothing by processing multiple blocks in a loop.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:76-81)
+for (let i = 0; i < SMOOTHING_SETTLE_BLOCKS; i++) {
+  core.process([inputLeft, inputRight], [outputLeft, outputRight]);
+}
+```
+
+**Amplitude calculation with reduce:**
+Use `reduce` to calculate average amplitude across a block.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:84-85)
+const avgLeft = outputLeft.reduce((sum, val) => sum + Math.abs(val), 0) / BLOCK_SIZE;
+```
+
+**toBeCloseTo for floating-point:**
+Use `toBeCloseTo` with tolerance for amplitude comparisons.
+
+```javascript
+// ✅ Correct (tests/volume-knob.test.ts:90)
+expect(avgLeft).toBeCloseTo(expectedAmplitude, AMPLITUDE_TOLERANCE);
+```
+
+### Configuration Patterns
+
+**Test environment by package:**
+- Frontend tests: `environment: 'jsdom'`
+- DSP tests: `environment: 'node'`
+- Integration tests: `environment: 'node'`, `testTimeout: 60000`
+
+**Per-file coverage thresholds:**
+Coverage is enforced per-file, not just overall.
+
+```typescript
+// ✅ Correct (vitest.unit.config.ts)
+thresholds: {
+  perFile: true,  // Each file must meet threshold
+  statements: 95,
+  branches: 95,
+  functions: 95,
+  lines: 95,
+}
+```
+
+### Import Conventions (Additional Details)
+
+**Import order:**
+1. React and React hooks
+2. External libraries
+3. Local components/modules
+4. CSS imports
+
+```javascript
+// ✅ Correct order (packages/frontend/src/main.jsx)
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import Interface from './Interface.jsx'
+
+import createHooks from 'zustand'
+import createStore from 'zustand/vanilla'
+
+import './index.css'
+```
+
+**JSX imports with extension:**
+Include `.jsx` extension for JSX component imports (matches ESM convention).
+
+```javascript
+// ✅ Correct
+import Interface from './Interface.jsx';
+import Knob from './Knob.jsx';
+```
+
