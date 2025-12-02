@@ -24,3 +24,4 @@ package-lock.json
 
 # Tests (scanned separately with test rules if needed)
 tests/
+**/*.test.ts

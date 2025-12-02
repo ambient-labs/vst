@@ -535,6 +535,19 @@ ComponentName/
   ```typescript
   const [_unused, setter] = result;
   ```
+- **Async entry points**: Use try/catch with top-level await, not `.catch()`
+  ```typescript
+  // Preferred
+  try {
+    await main();
+  } catch (err) {
+    console.error('Fatal error:', err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
+
+  // Avoid
+  main().catch((err) => { ... });
+  ```
 
 ### Async/Await Patterns
 
