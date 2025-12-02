@@ -6,5 +6,6 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     fileParallelism: true,
+    clearMocks: true,
   },
 });

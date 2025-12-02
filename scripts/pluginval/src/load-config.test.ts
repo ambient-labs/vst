@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { readFile } from 'fs/promises';
 
 vi.mock('fs/promises', async (importOriginal) => {
@@ -12,11 +12,7 @@ vi.mock('fs/promises', async (importOriginal) => {
 import { loadConfig } from './load-config.js';
 
 describe('loadConfig', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should load and parse a valid config file', async () => {
+  test('should load and parse a valid config file', async () => {
     const testConfig = {
       version: 'v1.0.0',
       cacheDir: 'node_modules/.cache/test',
@@ -41,13 +37,13 @@ describe('loadConfig', () => {
     expect(readFile).toHaveBeenCalledWith('/path/to/config.json', 'utf-8');
   });
 
-  it('should throw on invalid JSON', async () => {
+  test('should throw on invalid JSON', async () => {
     vi.mocked(readFile).mockResolvedValueOnce('not valid json');
 
     await expect(loadConfig('/path/to/invalid.json')).rejects.toThrow();
   });
 
-  it('should throw on missing file', async () => {
+  test('should throw on missing file', async () => {
     vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT: no such file'));
 
     await expect(loadConfig('/nonexistent/config.json')).rejects.toThrow('ENOENT');

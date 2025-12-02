@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mkdir, unlink, chmod } from 'fs/promises';
 import { existsSync } from 'fs';
 import { downloadFile } from 'helpers/download-file';
@@ -7,15 +7,15 @@ import { getPluginvalPath } from './get-pluginval-path.js';
 import type { Config, PlatformConfig } from './load-config.js';
 import type { SetupOptions } from './setup.js';
 
-vi.mock('helpers/download-file', () => ({
+vi.mock('helpers/download-file', (): { downloadFile: typeof downloadFile } => ({
   downloadFile: vi.fn(),
 }));
 
-vi.mock('extract-zip', () => ({
+vi.mock('extract-zip', (): { default: typeof extractZip } => ({
   default: vi.fn(),
 }));
 
-vi.mock('./get-pluginval-path.js', () => ({
+vi.mock('./get-pluginval-path.js', (): { getPluginvalPath: typeof getPluginvalPath } => ({
   getPluginvalPath: vi.fn(),
 }));
 
@@ -46,8 +46,6 @@ describe('setup', () => {
   let basePlatformConfig: PlatformConfig;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
     // Default mock implementations
     vi.mocked(mkdir).mockResolvedValue(undefined);
     vi.mocked(unlink).mockResolvedValue(undefined);
@@ -75,7 +73,7 @@ describe('setup', () => {
     basePlatformConfig = baseConfig.platforms.linux;
   });
 
-  it('should return existing installation if already installed', async () => {
+  test('should return existing installation if already installed', async () => {
     vi.mocked(getPluginvalPath).mockResolvedValueOnce('/cache/pluginval');
 
     const options: SetupOptions = {
@@ -95,7 +93,7 @@ describe('setup', () => {
     expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('already installed'));
   });
 
-  it('should download and extract when not installed', async () => {
+  test('should download and extract when not installed', async () => {
     // First call (check existing) throws, second call (after extract) returns path
     vi.mocked(getPluginvalPath)
       .mockRejectedValueOnce(new Error('Not found'))
@@ -125,7 +123,7 @@ describe('setup', () => {
     expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('Extraction complete'));
   });
 
-  it('should throw on download failure', async () => {
+  test('should throw on download failure', async () => {
     vi.mocked(getPluginvalPath).mockRejectedValueOnce(new Error('Not found'));
     vi.mocked(downloadFile).mockRejectedValueOnce(new Error('Network error'));
 
@@ -140,7 +138,7 @@ describe('setup', () => {
     await expect(setup(options)).rejects.toThrow('Network error');
   });
 
-  it('should throw on extraction failure', async () => {
+  test('should throw on extraction failure', async () => {
     vi.mocked(getPluginvalPath).mockRejectedValueOnce(new Error('Not found'));
     vi.mocked(downloadFile).mockResolvedValueOnce(undefined);
     vi.mocked(extractZip).mockRejectedValueOnce(new Error('Invalid zip'));
@@ -156,7 +154,7 @@ describe('setup', () => {
     await expect(setup(options)).rejects.toThrow('Invalid zip');
   });
 
-  it('should use default console logger if none provided', async () => {
+  test('should use default console logger if none provided', async () => {
     vi.mocked(getPluginvalPath).mockResolvedValueOnce('/cache/pluginval');
 
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -174,7 +172,7 @@ describe('setup', () => {
     consoleSpy.mockRestore();
   });
 
-  it('should chmod binary on darwin/linux', async () => {
+  test('should chmod binary on darwin/linux', async () => {
     vi.mocked(getPluginvalPath)
       .mockRejectedValueOnce(new Error('Not found'))
       .mockResolvedValueOnce('/cache/pluginval');
